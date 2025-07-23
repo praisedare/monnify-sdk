@@ -1,0 +1,45 @@
+{
+    "name": "praisedare/monnify-sdk",
+    "description": "PHP SDK for Monnify Payment Gateway Integration",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["monnify", "payment", "gateway", "nigeria", "php", "sdk"],
+    "authors": [
+        {
+            "name": "Praise Dare",
+            "email": "praisedare27@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "guzzlehttp/guzzle": "^7.0",
+        "ext-json": "*",
+        "ext-curl": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "mockery/mockery": "^1.6",
+        "phpstan/phpstan": "^1.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "PraiseDare\\Monnify\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PraiseDare\\Monnify\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-html coverage",
+        "phpstan": "phpstan analyse src tests"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
