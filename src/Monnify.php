@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify;
 
-use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Route;
 use PraiseDare\Monnify\Services\PaymentService;
 use PraiseDare\Monnify\Services\RefundService;
 use PraiseDare\Monnify\Services\SettlementService;
@@ -154,8 +154,8 @@ class Monnify
     /**
      * Register webhook routes
      */
-    public function registerWebhookRoutes(Router $router, string $url = '/monnify/webhook'): void
+    public function registerWebhookRoutes(string $url = '/monnify/webhook'): void
     {
-        $router->post($url, WebhookController::class);
+        Route::post($url, WebhookController::class);
     }
 }
