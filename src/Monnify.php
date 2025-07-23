@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify;
 
+use Illuminate\Routing\Router;
 use PraiseDare\Monnify\Services\PaymentService;
 use PraiseDare\Monnify\Services\RefundService;
 use PraiseDare\Monnify\Services\SettlementService;
@@ -12,6 +13,7 @@ use PraiseDare\Monnify\Services\BankService;
 use PraiseDare\Monnify\Services\CustomerService;
 use PraiseDare\Monnify\Config\Config;
 use PraiseDare\Monnify\Http\Client;
+use PraiseDare\Monnify\Http\Controller\WebhookController;
 
 /**
  * Main Monnify SDK class
@@ -147,5 +149,13 @@ class Monnify
     public function isSandbox(): bool
     {
         return $this->config->getEnvironment() === 'sandbox';
+    }
+
+    /**
+     * Register webhook routes
+     */
+    public function registerWebhookRoutes(Router $router, string $url = '/monnify/webhook'): void
+    {
+        $router->post($url, WebhookController::class);
     }
 }

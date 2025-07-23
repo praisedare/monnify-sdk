@@ -18,6 +18,7 @@ class Config
     private int $timeout;
     private bool $verifySsl;
     private string $baseUrl;
+    private array $webhookEventHandlers;
 
     /**
      * Constructor
@@ -32,6 +33,7 @@ class Config
         $this->environment = $config['environment'] ?? 'sandbox';
         $this->timeout = $config['timeout'] ?? 30;
         $this->verifySsl = $config['verify_ssl'] ?? true;
+        $this->webhookEventHandlers = $config['webhook_event_handlers'] ?? [];
 
         $this->validate();
         $this->setBaseUrl();
@@ -62,6 +64,13 @@ class Config
 
         if ($this->timeout < 1) {
             throw new \InvalidArgumentException('Timeout must be at least 1 second');
+        }
+
+        // Validate webhook event handlers
+        foreach ($this->webhookEventHandlers as $event => $handler) {
+            if (!is_callable($handler)) {
+                throw new \InvalidArgumentException("Webhook event handler for '{$event}' must be callable");
+            }
         }
     }
 
@@ -146,6 +155,49 @@ class Config
     }
 
     /**
+     * Get webhook event handlers
+     *
+     * @return array
+     */
+    public function getWebhookEventHandlers(): array
+    {
+        return $this->webhookEventHandlers;
+    }
+
+    /**
+     * Get webhook event handler for specific event
+     *
+     * @param string $event
+     * @return callable|null
+     */
+    public function getWebhookEventHandler(string $event): ?callable
+    {
+        return $this->webhookEventHandlers[$event] ?? null;
+    }
+
+    /**
+     * Register webhook event handler
+     *
+     * @param string $event
+     * @param callable $handler
+     */
+    public function registerWebhookEventHandler(string $event, callable $handler): void
+    {
+        $this->webhookEventHandlers[$event] = $handler;
+    }
+
+    /**
+     * Check if webhook event handler exists for specific event
+     *
+     * @param string $event
+     * @return bool
+     */
+    public function hasWebhookEventHandler(string $event): bool
+    {
+        return isset($this->webhookEventHandlers[$event]);
+    }
+
+    /**
      * Get all configuration as array
      *
      * @return array
@@ -160,6 +212,7 @@ class Config
             'timeout' => $this->timeout,
             'verify_ssl' => $this->verifySsl,
             'base_url' => $this->baseUrl,
+            'webhook_event_handlers' => $this->webhookEventHandlers,
         ];
     }
 }
