@@ -1,6 +1,6 @@
 <?php
 
-namespace PraiseDare\Monnify\Http\Controller;
+namespace PraiseDare\Monnify\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -10,6 +10,7 @@ use PraiseDare\Monnify\Models\Transaction;
 use PraiseDare\Monnify\Notifications\PaymentSuccessfulNotification;
 use PraiseDare\Monnify\Notifications\PaymentFailedNotification;
 use PraiseDare\Monnify\Enums\WebhookEvents;
+use Illuminate\Routing\Controller;
 
 class WebhookController extends Controller
 {
