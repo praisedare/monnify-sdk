@@ -167,7 +167,7 @@ class Client
      */
     private function authenticate(): void
     {
-        $credentials = base64_encode($this->config->getPublicKey() . ':' . $this->config->getSecretKey());
+        $credentials = base64_encode($this->config->getApiKey() . ':' . $this->config->getSecretKey());
 
         try {
             // According to Monnify docs, we need to make a request to get an access token

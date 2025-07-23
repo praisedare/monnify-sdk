@@ -27,7 +27,7 @@ use PraiseDare\Monnify\Monnify;
 
 $monnify = new Monnify([
     'secret_key' => 'your_secret_key',
-    'public_key' => 'your_public_key',
+    'api_key' => 'your_api_key',
     'contract_code' => 'your_contract_code',
     'environment' => 'sandbox', // or 'live'
 ]);
@@ -76,7 +76,7 @@ if ($monnify->webhook()->verify($webhookData, $signature)) {
 
 ```env
 MONNIFY_SECRET_KEY=your_secret_key
-MONNIFY_PUBLIC_KEY=your_public_key
+MONNIFY_API_KEY=your_api_key
 MONNIFY_CONTRACT_CODE=your_contract_code
 MONNIFY_ENVIRONMENT=sandbox
 ```
@@ -86,7 +86,7 @@ MONNIFY_ENVIRONMENT=sandbox
 ```php
 $config = [
     'secret_key' => env('MONNIFY_SECRET_KEY'),
-    'public_key' => env('MONNIFY_PUBLIC_KEY'),
+    'api_key' => env('MONNIFY_API_KEY'),
     'contract_code' => env('MONNIFY_CONTRACT_CODE'),
     'environment' => env('MONNIFY_ENVIRONMENT', 'sandbox'),
     'timeout' => 30, // HTTP timeout in seconds

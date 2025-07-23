@@ -12,7 +12,7 @@ namespace PraiseDare\Monnify\Config;
 class Config
 {
     private string $secretKey;
-    private string $publicKey;
+    private string $apiKey;
     private string $contractCode;
     private string $environment;
     private int $timeout;
@@ -27,7 +27,7 @@ class Config
     public function __construct(array $config = [])
     {
         $this->secretKey = $config['secret_key'] ?? '';
-        $this->publicKey = $config['public_key'] ?? '';
+        $this->apiKey = $config['api_key'] ?? '';
         $this->contractCode = $config['contract_code'] ?? '';
         $this->environment = $config['environment'] ?? 'sandbox';
         $this->timeout = $config['timeout'] ?? 30;
@@ -48,8 +48,8 @@ class Config
             throw new \InvalidArgumentException('Secret key is required');
         }
 
-        if (empty($this->publicKey)) {
-            throw new \InvalidArgumentException('Public key is required');
+        if (empty($this->apiKey)) {
+            throw new \InvalidArgumentException('API key is required');
         }
 
         if (empty($this->contractCode)) {
@@ -86,13 +86,13 @@ class Config
     }
 
     /**
-     * Get public key
+     * Get API key
      *
      * @return string
      */
-    public function getPublicKey(): string
+    public function getApiKey(): string
     {
-        return $this->publicKey;
+        return $this->apiKey;
     }
 
     /**
@@ -154,7 +154,7 @@ class Config
     {
         return [
             'secret_key' => $this->secretKey,
-            'public_key' => $this->publicKey,
+            'api_key' => $this->apiKey,
             'contract_code' => $this->contractCode,
             'environment' => $this->environment,
             'timeout' => $this->timeout,
