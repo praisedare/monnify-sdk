@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PraiseDare\Monnify;
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use PraiseDare\Monnify\Services\PaymentService;
 use PraiseDare\Monnify\Services\RefundService;
 use PraiseDare\Monnify\Services\SettlementService;
@@ -35,7 +36,15 @@ class Monnify
     /**
      * Constructor
      *
-     * @param array $config Configuration array
+     * @param array{
+     *  secret_key: string,
+     *  api_key: string,
+     *  contract_code: string,
+     *  environment: string,
+     *  timeout: int,
+     *  verify_ssl: bool,
+     *  webhook_event_handlers: array<string, callable>
+     * } $config Configuration array
      */
     public function __construct(array $config = [])
     {
@@ -156,6 +165,6 @@ class Monnify
      */
     public function registerWebhookRoutes(string $url = '/monnify/webhook'): void
     {
-        Route::post($url, WebhookController::class);
+        Route::post($url, WebhookController::class)->withoutMiddleware(VerifyCsrfToken::class);
     }
 }

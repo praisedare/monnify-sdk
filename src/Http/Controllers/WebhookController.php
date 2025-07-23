@@ -28,7 +28,7 @@ class WebhookController extends Controller
     {
         try {
             $webhookData = $request->getContent();
-            $signature = $request->header('MNFY-SIGNATURE');
+            $signature = $request->header('monnify-signature');
 
             Log::info('Monnify webhook received', [
                 'signature' => $signature ? 'present' : 'missing',

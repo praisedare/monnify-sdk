@@ -23,7 +23,15 @@ class Config
     /**
      * Constructor
      *
-     * @param array $config Configuration array
+     * @param array{
+     *  secret_key: string,
+     *  api_key: string,
+     *  contract_code: string,
+     *  environment: string,
+     *  timeout: int,
+     *  verify_ssl: bool,
+     *  webhook_event_handlers: array<string, callable>
+     * } $config Configuration array
      */
     public function __construct(array $config = [])
     {

@@ -88,6 +88,16 @@ class WebhookService
         return $this->parse($webhookData);
     }
 
+    public function getWebhookEventHandlers(): array
+    {
+        return $this->config->getWebhookEventHandlers();
+    }
+
+    public function getWebhookEventHandler(string $eventType): ?callable
+    {
+        return $this->config->getWebhookEventHandler($eventType);
+    }
+
     /**
      * Get webhook event type
      *
@@ -100,7 +110,7 @@ class WebhookService
     }
 
     /**
-     * Get transaction reference from webhook
+     * Get the Monnify-defined transaction reference from webhook
      *
      * @param array $webhookData Parsed webhook data
      * @return string|null
@@ -108,6 +118,17 @@ class WebhookService
     public function getTransactionReference(array $webhookData): ?string
     {
         return $webhookData['eventData']['transactionReference'] ?? null;
+    }
+
+    /**
+     * Get the user-defined payment reference from webhook
+     *
+     * @param array $webhookData Parsed webhook data
+     * @return string|null
+     */
+    public function getPaymentReference(array $webhookData): ?string
+    {
+        return $webhookData['eventData']['paymentReference'] ?? null;
     }
 
     /**
