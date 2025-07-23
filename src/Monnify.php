@@ -13,7 +13,7 @@ use PraiseDare\Monnify\Services\BankService;
 use PraiseDare\Monnify\Services\CustomerService;
 use PraiseDare\Monnify\Config\Config;
 use PraiseDare\Monnify\Http\Client;
-use PraiseDare\Monnify\Http\Controller\WebhookController;
+use PraiseDare\Monnify\Http\Controllers\WebhookController;
 
 /**
  * Main Monnify SDK class
