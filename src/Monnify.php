@@ -12,6 +12,7 @@ use PraiseDare\Monnify\Services\SettlementService;
 use PraiseDare\Monnify\Services\WebhookService;
 use PraiseDare\Monnify\Services\BankService;
 use PraiseDare\Monnify\Services\CustomerService;
+use PraiseDare\Monnify\Services\TransferService;
 use PraiseDare\Monnify\Config\Config;
 use PraiseDare\Monnify\Http\Client;
 use PraiseDare\Monnify\Http\Controllers\WebhookController;
@@ -32,6 +33,7 @@ class Monnify
     private WebhookService $webhookService;
     private BankService $bankService;
     private CustomerService $customerService;
+    private TransferService $transferService;
 
     /**
      * Constructor
@@ -58,6 +60,7 @@ class Monnify
         $this->webhookService = new WebhookService($this->config);
         $this->bankService = new BankService($this->client);
         $this->customerService = new CustomerService($this->client);
+        $this->transferService = new TransferService($this->client);
     }
 
     /**
@@ -118,6 +121,16 @@ class Monnify
     public function customer(): CustomerService
     {
         return $this->customerService;
+    }
+
+    /**
+     * Get transfer service
+     *
+     * @return TransferService
+     */
+    public function transfer(): TransferService
+    {
+        return $this->transferService;
     }
 
     /**

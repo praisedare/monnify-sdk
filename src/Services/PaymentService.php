@@ -29,7 +29,19 @@ class PaymentService
     /**
      * Initialize a payment transaction
      *
-     * @param array $data Payment data
+     * @param array{
+     *  amount: float,
+     *  customerName: string,
+     *  customerEmail: string,
+     *  paymentReference: string,
+     *  paymentDescription?: string,
+     *  currencyCode?: string,
+     *  contractCode?: string,
+     *  redirectUrl: string,
+     *  paymentMethods?: array<string>,
+     *  customerPhone?: string,
+     *  metadata?: array<string, mixed>
+     * } $data Payment data
      * @return array Response data
      * @throws MonnifyException
      */
