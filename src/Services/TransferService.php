@@ -16,6 +16,8 @@ class TransferService
 {
     private Client $client;
 
+    const BASE_PATH = '/api/v2/disbursements';
+
     /**
      * Constructor
      *
@@ -73,7 +75,8 @@ class TransferService
             $payload['metadata'] = $data['metadata'];
         }
 
-        return $this->client->post('/api/v1/disbursements/single', $payload);
+        // print_r($payload);
+        return $this->client->post(self::BASE_PATH . '/single', $payload);
     }
 
     /**
@@ -123,7 +126,7 @@ class TransferService
             $payload['metadata'] = $data['metadata'];
         }
 
-        return $this->client->post('/api/v1/disbursements/single/async', $payload);
+        return $this->client->post(self::BASE_PATH . '/single/async', $payload);
     }
 
     /**
@@ -167,7 +170,7 @@ class TransferService
             'transactions' => $data['transactions'],
         ];
 
-        return $this->client->post('/api/v1/disbursements/bulk', $payload);
+        return $this->client->post(self::BASE_PATH . '/bulk', $payload);
     }
 
     /**
@@ -195,7 +198,7 @@ class TransferService
             'authorizationCode' => $data['authorizationCode'],
         ];
 
-        return $this->client->post('/api/v1/disbursements/single/authorize', $payload);
+        return $this->client->post(self::BASE_PATH . '/single/authorize', $payload);
     }
 
     /**
@@ -223,7 +226,7 @@ class TransferService
             'authorizationCode' => $data['authorizationCode'],
         ];
 
-        return $this->client->post('/api/v1/disbursements/bulk/authorize', $payload);
+        return $this->client->post(self::BASE_PATH . '/bulk/authorize', $payload);
     }
 
     /**
@@ -243,7 +246,7 @@ class TransferService
             'reference' => $reference,
         ];
 
-        return $this->client->post('/api/v1/disbursements/single/resend-otp', $payload);
+        return $this->client->post(self::BASE_PATH . '/single/resend-otp', $payload);
     }
 
     /**
@@ -259,7 +262,7 @@ class TransferService
             throw new MonnifyException('Reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get("/api/v1/disbursements/single/{$reference}");
+        return $this->client->get(self::BASE_PATH . "/single/{$reference}");
     }
 
     /**
@@ -301,7 +304,7 @@ class TransferService
 
         $queryString = !empty($queryParams) ? '?' . http_build_query($queryParams) : '';
 
-        return $this->client->get("/api/v1/disbursements/single{$queryString}");
+        return $this->client->get(self::BASE_PATH . "/single{$queryString}");
     }
 
     /**
@@ -317,7 +320,7 @@ class TransferService
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get("/api/v1/disbursements/bulk/{$batchReference}/transactions");
+        return $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}/transactions");
     }
 
     /**
@@ -333,7 +336,7 @@ class TransferService
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get("/api/v1/disbursements/bulk/{$batchReference}");
+        return $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}");
     }
 
     /**
@@ -390,7 +393,7 @@ class TransferService
 
         $queryString = !empty($queryParams) ? '?' . http_build_query($queryParams) : '';
 
-        return $this->client->get("/api/v1/disbursements/search{$queryString}");
+                return $this->client->get(self::BASE_PATH . "/search{$queryString}");
     }
 
     /**
@@ -406,7 +409,7 @@ class TransferService
             throw new MonnifyException('Account number is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get("/api/v1/disbursements/wallet-balance?accountNumber={$accountNumber}");
+        return $this->client->get(self::BASE_PATH . "/wallet-balance?accountNumber={$accountNumber}");
     }
 
     /**
@@ -423,7 +426,7 @@ class TransferService
         ];
 
         foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || empty($data[$field])) {
+            if (!isset($data[$field]) || is_null($data[$field])) {
                 throw new MonnifyException("Field '{$field}' is required", 400, null, 'VALIDATION_ERROR');
             }
         }
