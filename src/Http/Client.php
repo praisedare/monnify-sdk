@@ -46,13 +46,14 @@ class Client
      * Make a GET request
      *
      * @param string $endpoint API endpoint
+     * @param array $query Query parameters
      * @param array $headers Additional headers
      * @return array Response data
      * @throws MonnifyException
      */
-    public function get(string $endpoint, array $headers = []): array
+    public function get(string $endpoint, array $query = [], array $headers = []): array
     {
-        return $this->request('GET', $endpoint, [], $headers);
+        return $this->request('GET', $endpoint, [], $headers, $query);
     }
 
     /**
@@ -103,10 +104,11 @@ class Client
      * @param string $endpoint API endpoint
      * @param array $data Request data
      * @param array $headers Additional headers
+     * @param array $query Query parameters
      * @return array Response data
      * @throws MonnifyException
      */
-    public function request(string $method, string $endpoint, array $data = [], array $headers = []): array
+    public function request(string $method, string $endpoint, array $data = [], array $headers = [], array $query = []): array
     {
         // Add authentication header if needed
         if ($this->requiresAuth($endpoint)) {
@@ -119,6 +121,10 @@ class Client
 
         if (!empty($data)) {
             $options['json'] = $data;
+        }
+
+        if (!empty($query)) {
+            $options['query'] = $query;
         }
 
         try {
