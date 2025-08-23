@@ -76,7 +76,7 @@ class BankService
             'bankCode' => $bankCode,
         ];
 
-        return $this->client->post('/api/v1/disbursements/account/validate', $payload);
+        return $this->client->get('/api/v1/disbursements/account/validate', $payload);
     }
 
     /**

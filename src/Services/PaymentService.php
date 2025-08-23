@@ -10,7 +10,8 @@ use PraiseDare\Monnify\Exceptions\MonnifyException;
 /**
  * Payment Service for Monnify API
  *
- * Handles all payment-related operations
+ * Handles all payment-related operations (received payments related actions,
+ * not transfer related actions, use the TransferService for that)
  */
 class PaymentService
 {
