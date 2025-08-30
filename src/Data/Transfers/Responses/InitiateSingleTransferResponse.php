@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace PraiseDare\Monnify\Data\Responses;
+namespace PraiseDare\Monnify\Data\Transfers\Responses;
 
 /**
- * Response for initiating an asynchronous transfer
+ * Response for initiating a single transfer
  */
-class InitiateAsyncTransferResponse
+class InitiateSingleTransferResponse
 {
     public function __construct(
         public readonly bool $requestSuccessful,
         public readonly string $responseMessage,
         public readonly string $responseCode,
-        public readonly InitiateAsyncTransferResponseBody $responseBody
+        public readonly InitiateSingleTransferResponseBody $responseBody
     ) {
     }
 
@@ -26,7 +26,7 @@ class InitiateAsyncTransferResponse
             requestSuccessful: $data['requestSuccessful'],
             responseMessage: $data['responseMessage'],
             responseCode: $data['responseCode'],
-            responseBody: InitiateAsyncTransferResponseBody::fromArray($data['responseBody'])
+            responseBody: InitiateSingleTransferResponseBody::fromArray($data['responseBody'])
         );
     }
 
@@ -45,9 +45,9 @@ class InitiateAsyncTransferResponse
 }
 
 /**
- * Response body for initiating an asynchronous transfer
+ * Response body for initiating a single transfer
  */
-class InitiateAsyncTransferResponseBody
+class InitiateSingleTransferResponseBody
 {
     public function __construct(
         public readonly float $amount,
@@ -55,10 +55,12 @@ class InitiateAsyncTransferResponseBody
         public readonly string $status,
         public readonly string $dateCreated,
         public readonly float $totalFee,
+        public readonly ?string $sessionId,
         public readonly string $destinationAccountName,
         public readonly string $destinationBankName,
         public readonly string $destinationAccountNumber,
-        public readonly string $destinationBankCode
+        public readonly string $destinationBankCode,
+        public readonly ?string $comment = null
     ) {
     }
 
@@ -73,10 +75,12 @@ class InitiateAsyncTransferResponseBody
             status: $data['status'],
             dateCreated: $data['dateCreated'],
             totalFee: $data['totalFee'],
+            sessionId: $data['sessionId'] ?? null,
             destinationAccountName: $data['destinationAccountName'],
             destinationBankName: $data['destinationBankName'],
             destinationAccountNumber: $data['destinationAccountNumber'],
-            destinationBankCode: $data['destinationBankCode']
+            destinationBankCode: $data['destinationBankCode'],
+            comment: $data['comment'] ?? null
         );
     }
 
@@ -91,18 +95,52 @@ class InitiateAsyncTransferResponseBody
             'status' => $this->status,
             'dateCreated' => $this->dateCreated,
             'totalFee' => $this->totalFee,
+            'sessionId' => $this->sessionId,
             'destinationAccountName' => $this->destinationAccountName,
             'destinationBankName' => $this->destinationBankName,
             'destinationAccountNumber' => $this->destinationAccountNumber,
             'destinationBankCode' => $this->destinationBankCode,
+            'comment' => $this->comment,
         ];
     }
 
     /**
-     * Check if transfer is pending
+     * Check if transfer was successful (2FA disabled)
      */
-    public function isPending(): bool
+    public function isSuccessful(): bool
     {
-        return $this->status === 'PENDING';
+        return $this->status === 'SUCCESS';
+    }
+
+    /**
+     * Check if transfer is pending authorization (2FA enabled)
+     */
+    public function isPendingAuthorization(): bool
+    {
+        return $this->status === 'PENDING_AUTHORIZATION';
+    }
+
+    /**
+     * Get session ID if available (only present for successful transfers)
+     */
+    public function getSessionId(): ?string
+    {
+        return $this->sessionId;
+    }
+
+    /**
+     * Check if transfer failed
+     */
+    public function isFailed(): bool
+    {
+        return $this->status === 'FAILED';
+    }
+
+    /**
+     * Get failure comment if transfer failed
+     */
+    public function getFailureComment(): ?string
+    {
+        return $this->comment;
     }
 }

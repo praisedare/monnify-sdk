@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PraiseDare\Monnify\Data;
+namespace PraiseDare\Monnify\Data\Transfers;
 
 /**
  * Data transfer object for transfer filter operations

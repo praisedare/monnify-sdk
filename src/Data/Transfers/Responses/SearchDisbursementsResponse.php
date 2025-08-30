@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PraiseDare\Monnify\Data\Responses;
+namespace PraiseDare\Monnify\Data\Transfers\Responses;
 
 /**
  * Response for searching disbursements

@@ -2,8 +2,8 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use PraiseDare\Monnify\Data\BulkTransferData;
-use PraiseDare\Monnify\Data\TransferData;
+use PraiseDare\Monnify\Data\Transfers\BulkTransferData;
+use PraiseDare\Monnify\Data\Transfers\TransferData;
 use PraiseDare\Monnify\Monnify;
 
 

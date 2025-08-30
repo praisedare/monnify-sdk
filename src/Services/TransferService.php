@@ -6,14 +6,14 @@ namespace PraiseDare\Monnify\Services;
 
 use PraiseDare\Monnify\Http\Client;
 use PraiseDare\Monnify\Exceptions\MonnifyException;
-use PraiseDare\Monnify\Data\{
+use PraiseDare\Monnify\Data\Transfers\{
     TransferData,
     BulkTransferData,
     AuthorizationData,
     BulkAuthorizationData,
     TransferFilterData,
 };
-use PraiseDare\Monnify\Data\Responses\{
+use PraiseDare\Monnify\Data\Transfers\Responses\{
     InitiateSingleTransferResponse,
     InitiateAsyncTransferResponse,
     InitiateBulkTransferResponse,
