@@ -6,6 +6,27 @@ namespace PraiseDare\Monnify\Services;
 
 use PraiseDare\Monnify\Http\Client;
 use PraiseDare\Monnify\Exceptions\MonnifyException;
+use PraiseDare\Monnify\Data\{
+    TransferData,
+    BulkTransferData,
+    AuthorizationData,
+    BulkAuthorizationData,
+    TransferFilterData,
+};
+use PraiseDare\Monnify\Data\Responses\{
+    InitiateSingleTransferResponse,
+    InitiateAsyncTransferResponse,
+    InitiateBulkTransferResponse,
+    AuthorizeSingleTransferResponse,
+    AuthorizeBulkTransferResponse,
+    ResendOtpResponse,
+    GetSingleTransferStatusResponse,
+    ListSingleTransfersResponse,
+    GetBulkTransferTransactionsResponse,
+    GetBulkTransferStatusResponse,
+    SearchDisbursementsResponse,
+    GetWalletBalanceResponse,
+};
 
 /**
  * Transfer Service for Monnify API
@@ -31,7 +52,7 @@ class TransferService
     /**
      * Initiate a single transfer
      *
-     * @param array{
+     * @param TransferData|array{
      *  amount: float,
      *  reference: string,
      *  narration: string,
@@ -44,45 +65,23 @@ class TransferService
      *  beneficiaryPhone?: string,
      *  metadata?: array<string, mixed>
      * } $data Transfer data
-     * @return array Response data
+     * @return InitiateSingleTransferResponse Response data
      * @throws MonnifyException
      */
-    public function initiateSingle(array $data): array
+    public function initiateSingle(TransferData|array $data): InitiateSingleTransferResponse
     {
-        $this->validateSingleTransferData($data);
-
-        $payload = [
-            'amount' => $data['amount'],
-            'reference' => $data['reference'],
-            'narration' => $data['narration'],
-            'destinationBankCode' => $data['destinationBankCode'],
-            'destinationAccountNumber' => $data['destinationAccountNumber'],
-            'destinationAccountName' => $data['destinationAccountName'],
-            'currency' => $data['currency'] ?? 'NGN',
-            'sourceAccountNumber' => $data['sourceAccountNumber'],
-        ];
-
-        // Add optional fields if provided
-        if (isset($data['beneficiaryEmail'])) {
-            $payload['beneficiaryEmail'] = $data['beneficiaryEmail'];
+        if (is_array($data)) {
+            $data = TransferData::fromArray($data);
         }
 
-        if (isset($data['beneficiaryPhone'])) {
-            $payload['beneficiaryPhone'] = $data['beneficiaryPhone'];
-        }
-
-        if (isset($data['metadata'])) {
-            $payload['metadata'] = $data['metadata'];
-        }
-
-        // print_r($payload);
-        return $this->client->post(self::BASE_PATH . '/single', $payload);
+        $response = $this->client->post(self::BASE_PATH . '/single', $data->toArray());
+        return InitiateSingleTransferResponse::fromArray($response);
     }
 
     /**
      * Initiate an asynchronous transfer
      *
-     * @param array{
+     * @param TransferData|array{
      *  amount: float,
      *  reference: string,
      *  narration: string,
@@ -95,44 +94,23 @@ class TransferService
      *  beneficiaryPhone?: string,
      *  metadata?: array<string, mixed>
      * } $data Transfer data
-     * @return array Response data
+     * @return InitiateAsyncTransferResponse Response data
      * @throws MonnifyException
      */
-    public function initiateAsync(array $data): array
+    public function initiateAsync(TransferData|array $data): InitiateAsyncTransferResponse
     {
-        $this->validateSingleTransferData($data);
-
-        $payload = [
-            'amount' => $data['amount'],
-            'reference' => $data['reference'],
-            'narration' => $data['narration'],
-            'destinationBankCode' => $data['destinationBankCode'],
-            'destinationAccountNumber' => $data['destinationAccountNumber'],
-            'destinationAccountName' => $data['destinationAccountName'],
-            'currency' => $data['currency'] ?? 'NGN',
-            'sourceAccountNumber' => $data['sourceAccountNumber'],
-        ];
-
-        // Add optional fields if provided
-        if (isset($data['beneficiaryEmail'])) {
-            $payload['beneficiaryEmail'] = $data['beneficiaryEmail'];
+        if (is_array($data)) {
+            $data = TransferData::fromArray([...$data, 'async' => true]);
         }
 
-        if (isset($data['beneficiaryPhone'])) {
-            $payload['beneficiaryPhone'] = $data['beneficiaryPhone'];
-        }
-
-        if (isset($data['metadata'])) {
-            $payload['metadata'] = $data['metadata'];
-        }
-
-        return $this->client->post(self::BASE_PATH . '/single/async', $payload);
+        $response = $this->client->post(self::BASE_PATH . '/single', $data->toArray());
+        return InitiateAsyncTransferResponse::fromArray($response);
     }
 
     /**
      * Initiate a bulk transfer
      *
-     * @param array{
+     * @param BulkTransferData|array{
      *  title: string,
      *  batchReference: string,
      *  narration: string,
@@ -140,7 +118,7 @@ class TransferService
      *  currency: string,
      *  onValidationFailure: string,
      *  notificationInterval: int,
-     *  transactions: array<array{
+     *  transactionList: array<array{
      *    amount: float,
      *    reference: string,
      *    narration: string,
@@ -152,91 +130,67 @@ class TransferService
      *    metadata?: array<string, mixed>
      *  }>
      * } $data Bulk transfer data
-     * @return array Response data
+     * @return InitiateBulkTransferResponse Response data
      * @throws MonnifyException
      */
-    public function initiateBulk(array $data): array
+    public function initiateBulk(BulkTransferData|array $data): InitiateBulkTransferResponse
     {
-        $this->validateBulkTransferData($data);
+        if (is_array($data)) {
+            $data = BulkTransferData::fromArray($data);
+        }
 
-        $payload = [
-            'title' => $data['title'],
-            'batchReference' => $data['batchReference'],
-            'narration' => $data['narration'],
-            'sourceAccountNumber' => $data['sourceAccountNumber'],
-            'currency' => $data['currency'] ?? 'NGN',
-            'onValidationFailure' => $data['onValidationFailure'] ?? 'CONTINUE',
-            'notificationInterval' => $data['notificationInterval'] ?? 5,
-            'transactions' => $data['transactions'],
-        ];
-
-        return $this->client->post(self::BASE_PATH . '/bulk', $payload);
+        $response = $this->client->post(self::BASE_PATH . '/batch', $data->toArray());
+        return InitiateBulkTransferResponse::fromArray($response);
     }
 
     /**
      * Authorize a single transfer
      *
-     * @param array{
+     * @param AuthorizationData|array{
      *  reference: string,
      *  authorizationCode: string
      * } $data Authorization data
-     * @return array Response data
+     * @return AuthorizeSingleTransferResponse Response data
      * @throws MonnifyException
      */
-    public function authorizeSingle(array $data): array
+    public function authorizeSingle(AuthorizationData|array $data): AuthorizeSingleTransferResponse
     {
-        if (empty($data['reference'])) {
-            throw new MonnifyException('Reference is required', 400, null, 'VALIDATION_ERROR');
+        if (is_array($data)) {
+            $data = AuthorizationData::fromArray($data);
         }
 
-        if (empty($data['authorizationCode'])) {
-            throw new MonnifyException('Authorization code is required', 400, null, 'VALIDATION_ERROR');
-        }
-
-        $payload = [
-            'reference' => $data['reference'],
-            'authorizationCode' => $data['authorizationCode'],
-        ];
-
-        return $this->client->post(self::BASE_PATH . '/single/authorize', $payload);
+        $response = $this->client->post(self::BASE_PATH . '/single/validate-otp', $data->toArray());
+        return AuthorizeSingleTransferResponse::fromArray($response);
     }
 
     /**
      * Authorize a bulk transfer
      *
-     * @param array{
+     * @param BulkAuthorizationData|array{
      *  batchReference: string,
      *  authorizationCode: string
      * } $data Authorization data
-     * @return array Response data
+     * @return AuthorizeBulkTransferResponse Response data
      * @throws MonnifyException
      */
-    public function authorizeBulk(array $data): array
+    public function authorizeBulk(BulkAuthorizationData|array $data): AuthorizeBulkTransferResponse
     {
-        if (empty($data['batchReference'])) {
-            throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
+        if (is_array($data)) {
+            $data = BulkAuthorizationData::fromArray($data);
         }
 
-        if (empty($data['authorizationCode'])) {
-            throw new MonnifyException('Authorization code is required', 400, null, 'VALIDATION_ERROR');
-        }
-
-        $payload = [
-            'batchReference' => $data['batchReference'],
-            'authorizationCode' => $data['authorizationCode'],
-        ];
-
-        return $this->client->post(self::BASE_PATH . '/bulk/authorize', $payload);
+        $response = $this->client->post(self::BASE_PATH . '/batch/validate-otp', $data->toArray());
+        return AuthorizeBulkTransferResponse::fromArray($response);
     }
 
     /**
      * Resend OTP for transfer authorization
      *
      * @param string $reference Transfer reference
-     * @return array Response data
+     * @return ResendOtpResponse Response data
      * @throws MonnifyException
      */
-    public function resendOtp(string $reference): array
+    public function resendOtp(string $reference): ResendOtpResponse
     {
         if (empty($reference)) {
             throw new MonnifyException('Reference is required', 400, null, 'VALIDATION_ERROR');
@@ -246,103 +200,89 @@ class TransferService
             'reference' => $reference,
         ];
 
-        return $this->client->post(self::BASE_PATH . '/single/resend-otp', $payload);
+        $response = $this->client->post(self::BASE_PATH . '/single/resend-otp', $payload);
+        return ResendOtpResponse::fromArray($response);
     }
 
     /**
      * Get single transfer status
      *
      * @param string $reference Transfer reference
-     * @return array Response data
+     * @return GetSingleTransferStatusResponse Response data
      * @throws MonnifyException
      */
-    public function getSingleTransferStatus(string $reference): array
+    public function getSingleTransferStatus(string $reference): GetSingleTransferStatusResponse
     {
         if (empty($reference)) {
             throw new MonnifyException('Reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get(self::BASE_PATH . "/single/{$reference}");
+        $response = $this->client->get(self::BASE_PATH . "/single/summary?reference={$reference}");
+        return GetSingleTransferStatusResponse::fromArray($response);
     }
 
     /**
      * List all single transfers
      *
-     * @param array{
+     * @param TransferFilterData|array{
      *  page?: int,
      *  size?: int,
      *  from?: string,
      *  to?: string,
      *  status?: string
-     * } $filters Optional filters
-     * @return array Response data
+     * }|null $filters Optional filters
+     * @return ListSingleTransfersResponse Response data
      * @throws MonnifyException
      */
-    public function listSingleTransfers(array $filters = []): array
+    public function listSingleTransfers(TransferFilterData|array|null $filters = null): ListSingleTransfersResponse
     {
-        $queryParams = [];
-
-        if (isset($filters['page'])) {
-            $queryParams['page'] = $filters['page'];
+        if (is_array($filters)) {
+            $filters = TransferFilterData::fromArray($filters);
         }
 
-        if (isset($filters['size'])) {
-            $queryParams['size'] = $filters['size'];
-        }
-
-        if (isset($filters['from'])) {
-            $queryParams['from'] = $filters['from'];
-        }
-
-        if (isset($filters['to'])) {
-            $queryParams['to'] = $filters['to'];
-        }
-
-        if (isset($filters['status'])) {
-            $queryParams['status'] = $filters['status'];
-        }
-
-        $queryString = !empty($queryParams) ? '?' . http_build_query($queryParams) : '';
-
-        return $this->client->get(self::BASE_PATH . "/single{$queryString}");
+        $queryString = $filters ? $filters->toQueryString() : '';
+        $response = $this->client->get(self::BASE_PATH . "/single/transactions{$queryString}");
+        return ListSingleTransfersResponse::fromArray($response);
     }
 
     /**
      * Get bulk transfer transactions
      *
      * @param string $batchReference Batch reference
-     * @return array Response data
+     * @return GetBulkTransferTransactionsResponse Response data
      * @throws MonnifyException
      */
-    public function getBulkTransferTransactions(string $batchReference): array
+    public function getBulkTransferTransactions(string $batchReference): GetBulkTransferTransactionsResponse
     {
         if (empty($batchReference)) {
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}/transactions");
+        $response = $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}/transactions");
+        return GetBulkTransferTransactionsResponse::fromArray($response);
     }
 
     /**
      * Get bulk transfer status
      *
      * @param string $batchReference Batch reference
-     * @return array Response data
+     * @return GetBulkTransferStatusResponse Response data
      * @throws MonnifyException
      */
-    public function getBulkTransferStatus(string $batchReference): array
+    public function getBulkTransferStatus(string $batchReference): GetBulkTransferStatusResponse
     {
         if (empty($batchReference)) {
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}");
+        $response = $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}");
+        return GetBulkTransferStatusResponse::fromArray($response);
     }
 
     /**
      * Search disbursement transactions
      *
-     * @param array{
+     * @param TransferFilterData|array{
      *  page?: int,
      *  size?: int,
      *  from?: string,
@@ -351,115 +291,37 @@ class TransferService
      *  reference?: string,
      *  destinationAccountNumber?: string,
      *  destinationBankCode?: string
-     * } $filters Search filters
-     * @return array Response data
+     * }|null $filters Search filters
+     * @return SearchDisbursementsResponse Response data
      * @throws MonnifyException
      */
-    public function searchDisbursements(array $filters = []): array
+    public function searchDisbursements(TransferFilterData|array|null $filters = null): SearchDisbursementsResponse
     {
-        $queryParams = [];
-
-        if (isset($filters['page'])) {
-            $queryParams['page'] = $filters['page'];
+        if (is_array($filters)) {
+            $filters = TransferFilterData::fromArray($filters);
         }
 
-        if (isset($filters['size'])) {
-            $queryParams['size'] = $filters['size'];
-        }
-
-        if (isset($filters['from'])) {
-            $queryParams['from'] = $filters['from'];
-        }
-
-        if (isset($filters['to'])) {
-            $queryParams['to'] = $filters['to'];
-        }
-
-        if (isset($filters['status'])) {
-            $queryParams['status'] = $filters['status'];
-        }
-
-        if (isset($filters['reference'])) {
-            $queryParams['reference'] = $filters['reference'];
-        }
-
-        if (isset($filters['destinationAccountNumber'])) {
-            $queryParams['destinationAccountNumber'] = $filters['destinationAccountNumber'];
-        }
-
-        if (isset($filters['destinationBankCode'])) {
-            $queryParams['destinationBankCode'] = $filters['destinationBankCode'];
-        }
-
-        $queryString = !empty($queryParams) ? '?' . http_build_query($queryParams) : '';
-
-                return $this->client->get(self::BASE_PATH . "/search{$queryString}");
+        $queryString = $filters ? $filters->toQueryString() : '';
+        $response = $this->client->get(self::BASE_PATH . "/search{$queryString}");
+        return SearchDisbursementsResponse::fromArray($response);
     }
 
     /**
      * Get wallet balance
      *
      * @param string $accountNumber Account number
-     * @return array Response data
+     * @return GetWalletBalanceResponse Response data
      * @throws MonnifyException
      */
-    public function getWalletBalance(string $accountNumber): array
+    public function getWalletBalance(string $accountNumber): GetWalletBalanceResponse
     {
         if (empty($accountNumber)) {
             throw new MonnifyException('Account number is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get(self::BASE_PATH . "/wallet-balance?accountNumber={$accountNumber}");
+        $response = $this->client->get(self::BASE_PATH . "/wallet-balance?accountNumber={$accountNumber}");
+        return GetWalletBalanceResponse::fromArray($response);
     }
 
-    /**
-     * Validate single transfer data
-     *
-     * @param array $data Transfer data
-     * @throws MonnifyException
-     */
-    private function validateSingleTransferData(array $data): void
-    {
-        $requiredFields = [
-            'amount', 'reference', 'narration', 'destinationBankCode',
-            'destinationAccountNumber', 'destinationAccountName', 'sourceAccountNumber'
-        ];
 
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || is_null($data[$field])) {
-                throw new MonnifyException("Field '{$field}' is required", 400, null, 'VALIDATION_ERROR');
-            }
-        }
-
-        if ($data['amount'] <= 0) {
-            throw new MonnifyException('Amount must be greater than 0', 400, null, 'VALIDATION_ERROR');
-        }
-    }
-
-    /**
-     * Validate bulk transfer data
-     *
-     * @param array $data Bulk transfer data
-     * @throws MonnifyException
-     */
-    private function validateBulkTransferData(array $data): void
-    {
-        $requiredFields = [
-            'title', 'batchReference', 'narration', 'sourceAccountNumber', 'transactions'
-        ];
-
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || empty($data[$field])) {
-                throw new MonnifyException("Field '{$field}' is required", 400, null, 'VALIDATION_ERROR');
-            }
-        }
-
-        if (empty($data['transactions']) || !is_array($data['transactions'])) {
-            throw new MonnifyException('Transactions must be a non-empty array', 400, null, 'VALIDATION_ERROR');
-        }
-
-        foreach ($data['transactions'] as $index => $transaction) {
-            $this->validateSingleTransferData($transaction);
-        }
-    }
 }

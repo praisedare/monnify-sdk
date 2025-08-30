@@ -139,7 +139,7 @@ class Client
         }
     }
 
-        /**
+    /**
      * Check if endpoint requires authentication
      *
      * @param string $endpoint API endpoint
