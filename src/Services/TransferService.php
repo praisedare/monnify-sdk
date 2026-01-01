@@ -80,35 +80,6 @@ class TransferService
     }
 
     /**
-     * Initiate an asynchronous transfer
-     *
-     * @param TransferInitializationData|array{
-     *  amount: float,
-     *  reference: string,
-     *  narration: string,
-     *  destinationBankCode: string,
-     *  destinationAccountNumber: string,
-     *  destinationAccountName: string,
-     *  currency: string,
-     *  sourceAccountNumber: string,
-     *  beneficiaryEmail?: string,
-     *  beneficiaryPhone?: string,
-     *  metadata?: array<string, mixed>
-     * } $data Transfer data
-     * @return InitiateAsyncTransferResponse Response data
-     * @throws MonnifyException
-     */
-    public function initiateAsync(TransferInitializationData|array $data): InitiateAsyncTransferResponse
-    {
-        if (is_array($data)) {
-            $data = TransferInitializationData::fromArray([...$data, 'async' => true]);
-        }
-
-        $response = $this->client->post(self::BASE_PATH . '/single', $data->toArray());
-        return InitiateAsyncTransferResponse::fromArray($response);
-    }
-
-    /**
      * Initiate a bulk transfer
      *
      * NOTE: Cannot handle more than 800 transactions.
@@ -138,13 +109,13 @@ class TransferService
      */
     public function initiateBulk(BulkTransferInitializationData|array $data): InitiateBulkTransferResponse
     {
-        // TODO: Next update will dierctly pass the provided array to the HTTP request
+        // Directly pass the provided array to the HTTP request
         // Useful for cases where absolute efficiency and performance are important.
-        if (is_array($data)) {
-            $data = BulkTransferInitializationData::fromArray($data);
-        }
+        // if (is_array($data)) {
+        //     $data = BulkTransferInitializationData::fromArray($data);
+        // }
 
-        $response = $this->client->post(self::BASE_PATH . '/batch', $data->toArray());
+        $response = $this->client->post(self::BASE_PATH . '/batch', is_array($data) ? $data : $data->toArray());
         // echo 'Initiate bulk response: '; var_dump($response);
         return InitiateBulkTransferResponse::fromArray($response);
     }

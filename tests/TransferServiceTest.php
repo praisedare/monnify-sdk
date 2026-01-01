@@ -137,10 +137,11 @@ class TransferServiceTest extends TestCase
             'destinationAccountNumber' => '0987654321',
             'destinationAccountName' => 'Async User',
             'sourceAccountNumber' => $this->client->getConfig()->getWalletAccountNumber(),
-            'currency' => 'NGN'
+            'currency' => 'NGN',
+            'async' => true,
         ];
 
-        $result = $this->transferService->initiateAsync($transferData);
+        $result = $this->transferService->initiateSingle($transferData);
         // dump($result);
         $this->isInstanceOf(InitiateAsyncTransferResponse::class);
         $this->assertTrue($result->requestSuccessful);
@@ -180,16 +181,49 @@ class TransferServiceTest extends TestCase
     }
 
     #[Test]
+    public function it_can_initiate_bulk_transfer_with_array()
+    {
+        $transactions = array_map(fn($x) => [
+            'amount' => [$m = rand(100, 200), $m -= $m % 10][1],
+            'reference' => "TRXF_BULK_{$x}_" . time(),
+            'narration' => 'First transfer',
+            'destinationAccountName' => 'User One',
+            'destinationBankCode' => str_pad((string) rand(0, 999), 3, '0', STR_PAD_LEFT),
+            'destinationAccountNumber' => str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT) . str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT),
+            'currency' => 'NGN',
+            'isBulkTransferItem' => true,
+        ], range(1, 5));
+        $bulkData = [
+            'title' => 'Test Bulk Transfer',
+            'batchReference' => $batchRef = 'XBATCH_' . time() . '_' . rand(1000, 9999),
+            'narration' => 'Bulk test transfer',
+            'sourceAccountNumber' => $this->client->getConfig()->getWalletAccountNumber(),
+            'currency' => 'NGN',
+            'transactionList' => $transactions,
+            'onValidationFailure' => 'CONTINUE',
+            'notificationInterval' => 25,
+        ];
+
+        $result = $this->transferService->initiateBulk($bulkData);
+        $this->assertInstanceOf(InitiateBulkTransferResponse::class, $result);
+        $this->assertTrue($result->requestSuccessful);
+        $this->assertEquals($result->responseBody->batchReference, $batchRef, 'Batch references do not match');
+        $this->assertEquals($result->responseBody->totalAmount, array_sum(array_column($transactions, 'amount')), 'Total amount of bulk transfer response does not match total amount transferred');
+        $this->assertEquals($result->responseBody->totalTransactions, count($transactions));
+        return $result;
+    }
+
+    #[Test]
     public function it_throws_exception_for_bulk_transfer_with_empty_transactions()
     {
         $this->expectException(MonnifyException::class);
-        $this->expectExceptionMessage('Transactions must be a non-empty array');
+        $this->expectExceptionMessage('Transaction list cannot be null or empty');
 
         $bulkData = [
             'title' => 'Test Bulk Transfer',
             'batchReference' => 'BATCH_001',
             'narration' => 'Bulk test transfer',
-            'sourceAccountNumber' => '1234567890',
+            'sourceAccountNumber' => $this->monnify->getConfig()->getWalletAccountNumber(),
             'currency' => 'NGN',
             'transactionList' => []
         ];

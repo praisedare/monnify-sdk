@@ -26,6 +26,7 @@ class TransferInitializationData
         public readonly ?string $beneficiaryEmail = null,
         public readonly ?string $beneficiaryPhone = null,
         public readonly ?array $metadata = null,
+        public readonly bool $async = false,
         /**
          * If true, then a sourceAccountNumber isn't required as it would have
          * already been set in the parent bulk transfer.
@@ -85,7 +86,8 @@ class TransferInitializationData
      *  currency?: string,
      *  beneficiaryEmail?: string,
      *  beneficiaryPhone?: string,
-     *  metadata?: array<string, mixed>
+     *  metadata?: array<string, mixed>,
+     *  async?: bool,
      * } $data
      * @return self
      */
@@ -104,6 +106,7 @@ class TransferInitializationData
             beneficiaryPhone: $data['beneficiaryPhone'] ?? null,
             metadata: $data['metadata'] ?? null,
             isBulkTransferItem: $isBulkTransferItem,
+            async: $data['async'] ?? false,
         );
     }
 
@@ -122,6 +125,7 @@ class TransferInitializationData
             'destinationAccountNumber' => $this->destinationAccountNumber,
             'destinationAccountName' => $this->destinationAccountName,
             'currency' => $this->currency,
+            'async' => $this->async,
         ];
 
         if ($this->beneficiaryEmail !== null) {

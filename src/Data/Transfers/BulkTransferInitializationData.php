@@ -55,7 +55,7 @@ class BulkTransferInitializationData
         }
 
         if (empty($this->transactionList) || !is_array($this->transactionList)) {
-            throw new ValidationException('Transactions must be a non-empty array', 'transactions');
+            throw new ValidationException('Transaction list cannot be null or empty', 'transactions');
         }
 
         if ($this->notificationInterval % 25
