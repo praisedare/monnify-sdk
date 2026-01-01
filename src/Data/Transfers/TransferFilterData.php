@@ -10,8 +10,8 @@ namespace PraiseDare\Monnify\Data\Transfers;
 class TransferFilterData
 {
     public function __construct(
-        public readonly ?int $pageNo = null,
-        public readonly ?int $pageSize = null,
+        public readonly int $pageNo = 1,
+        public readonly int $pageSize = 10,
         public readonly ?string $from = null,
         public readonly ?string $startDate = null,
         public readonly ?string $endDate = null,
@@ -20,14 +20,16 @@ class TransferFilterData
         public readonly ?int $amountFrom = null,
         public readonly ?int $amountTo = null,
     ) {
+        assert($pageNo >= 1, '$pageNo must be at least 1');
+        assert($pageSize >= 5, '$pageNo must be at least 5');
     }
 
     /**
      * Create TransferFilterData from array
      *
      * @param array{
-     *  page?: int,
-     *  size?: int,
+     *  pageNo: int,
+     *  pageSize: int,
      *  from?: string,
      *  startDate?: string,
      *  endDate?: string,
@@ -41,8 +43,8 @@ class TransferFilterData
     public static function fromArray(array $data): self
     {
         return new self(
-            pageNo: $data['page'] ?? null,
-            pageSize: $data['size'] ?? null,
+            pageNo: $data['pageNo'],
+            pageSize: $data['pageSize'],
             startDate: $data['startDate'] ?? null,
             endDate: $data['endDate'] ?? null,
             transactionReference: $data['transactionReference'] ?? null,
@@ -62,11 +64,11 @@ class TransferFilterData
         $params = [];
 
         if ($this->pageNo !== null) {
-            $params['page'] = $this->pageNo;
+            $params['pageNo'] = $this->pageNo;
         }
 
         if ($this->pageSize !== null) {
-            $params['size'] = $this->pageSize;
+            $params['pageSize'] = $this->pageSize;
         }
 
         if ($this->from !== null) {

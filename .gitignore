@@ -1,0 +1,127 @@
+# Composer dependencies
+/vendor/
+composer.lock
+
+# PHPUnit
+.phpunit.result.cache
+.phpunit.cache/
+coverage/
+tests/coverage/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Logs
+*.log
+logs/
+storage/logs/
+
+# Cache
+cache/
+*.cache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+build/
+dist/
+*.tar.gz
+*.zip
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# PHP specific
+*.php~
+*.php.bak
+*.php.swp
+*.php.swo
+
+# Configuration files with sensitive data
+config/database.php
+config/app.php
+ignored/
+creds.php
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Node modules (if using any frontend build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Laravel specific (if applicable)
+bootstrap/cache/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/app/public/
+storage/logs/
+.env.example
+
+# Symfony specific (if applicable)
+var/cache/
+var/logs/
+var/sessions/
+var/spool/
+app/cache/
+app/logs/
+
+# WordPress specific (if applicable)
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/upgrade/
+wp-content/plugins/hello.php
+
+# Drupal specific (if applicable)
+sites/*/files/
+sites/*/private/
+sites/*/tmp/
+sites/*/cache/
+
+# Magento specific (if applicable)
+var/cache/
+var/logs/
+var/reports/
+var/session/
+var/tmp/
+media/
+pub/media/
+pub/static/
+
+# Custom application specific
+uploads/
+public/uploads/
+private/
+temp/
+cache/

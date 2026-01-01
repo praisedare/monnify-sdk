@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify\Services;
 
+use PraiseDare\Monnify\Data\Common\PaginatedResponse;
 use PraiseDare\Monnify\Http\Client;
 use PraiseDare\Monnify\Exceptions\MonnifyException;
 use PraiseDare\Monnify\Data\Transfers\{
-    TransferData,
-    BulkTransferData,
+    TransferInitializationData,
+    BulkTransferInitializationData,
     AuthorizationData,
     BulkAuthorizationData,
+    BulkTransferDetails,
     TransferFilterData,
+    TransferDetails,
 };
 use PraiseDare\Monnify\Data\Transfers\Responses\{
     InitiateSingleTransferResponse,
@@ -21,8 +24,6 @@ use PraiseDare\Monnify\Data\Transfers\Responses\{
     AuthorizeBulkTransferResponse,
     ResendOtpResponse,
     GetSingleTransferStatusResponse,
-    ListSingleTransfersResponse,
-    GetBulkTransferTransactionsResponse,
     GetBulkTransferStatusResponse,
     SearchDisbursementsResponse,
     GetWalletBalanceResponse,
@@ -52,7 +53,7 @@ class TransferService
     /**
      * Initiate a single transfer
      *
-     * @param TransferData|array{
+     * @param TransferInitializationData|array{
      *  amount: float,
      *  reference: string,
      *  narration: string,
@@ -68,10 +69,10 @@ class TransferService
      * @return InitiateSingleTransferResponse Response data
      * @throws MonnifyException
      */
-    public function initiateSingle(TransferData|array $data): InitiateSingleTransferResponse
+    public function initiateSingle(TransferInitializationData|array $data): InitiateSingleTransferResponse
     {
         if (is_array($data)) {
-            $data = TransferData::fromArray($data);
+            $data = TransferInitializationData::fromArray($data);
         }
 
         $response = $this->client->post(self::BASE_PATH . '/single', $data->toArray());
@@ -81,7 +82,7 @@ class TransferService
     /**
      * Initiate an asynchronous transfer
      *
-     * @param TransferData|array{
+     * @param TransferInitializationData|array{
      *  amount: float,
      *  reference: string,
      *  narration: string,
@@ -97,10 +98,10 @@ class TransferService
      * @return InitiateAsyncTransferResponse Response data
      * @throws MonnifyException
      */
-    public function initiateAsync(TransferData|array $data): InitiateAsyncTransferResponse
+    public function initiateAsync(TransferInitializationData|array $data): InitiateAsyncTransferResponse
     {
         if (is_array($data)) {
-            $data = TransferData::fromArray([...$data, 'async' => true]);
+            $data = TransferInitializationData::fromArray([...$data, 'async' => true]);
         }
 
         $response = $this->client->post(self::BASE_PATH . '/single', $data->toArray());
@@ -110,7 +111,9 @@ class TransferService
     /**
      * Initiate a bulk transfer
      *
-     * @param BulkTransferData|array{
+     * NOTE: Cannot handle more than 800 transactions.
+     *
+     * @param BulkTransferInitializationData|array{
      *  title: string,
      *  batchReference: string,
      *  narration: string,
@@ -133,13 +136,16 @@ class TransferService
      * @return InitiateBulkTransferResponse Response data
      * @throws MonnifyException
      */
-    public function initiateBulk(BulkTransferData|array $data): InitiateBulkTransferResponse
+    public function initiateBulk(BulkTransferInitializationData|array $data): InitiateBulkTransferResponse
     {
+        // TODO: Next update will dierctly pass the provided array to the HTTP request
+        // Useful for cases where absolute efficiency and performance are important.
         if (is_array($data)) {
-            $data = BulkTransferData::fromArray($data);
+            $data = BulkTransferInitializationData::fromArray($data);
         }
 
         $response = $this->client->post(self::BASE_PATH . '/batch', $data->toArray());
+        // echo 'Initiate bulk response: '; var_dump($response);
         return InitiateBulkTransferResponse::fromArray($response);
     }
 
@@ -231,10 +237,9 @@ class TransferService
      *  to?: string,
      *  status?: string
      * }|null $filters Optional filters
-     * @return ListSingleTransfersResponse Response data
      * @throws MonnifyException
      */
-    public function listSingleTransfers(TransferFilterData|array|null $filters = null): ListSingleTransfersResponse
+    public function listSingleTransfers(TransferFilterData|array|null $filters = null)
     {
         if (is_array($filters)) {
             $filters = TransferFilterData::fromArray($filters);
@@ -242,24 +247,47 @@ class TransferService
 
         $queryString = $filters ? $filters->toQueryString() : '';
         $response = $this->client->get(self::BASE_PATH . "/single/transactions{$queryString}");
-        return ListSingleTransfersResponse::fromArray($response);
+        return PaginatedResponse::fromArray($response, TransferDetails::fromArray(...));
     }
 
     /**
-     * Get bulk transfer transactions
+     * List all bulk transfers
      *
-     * @param string $batchReference Batch reference
-     * @return GetBulkTransferTransactionsResponse Response data
+     * @param TransferFilterData|array{
+     *  page?: int,
+     *  size?: int,
+     *  from?: string,
+     *  to?: string,
+     *  status?: string
+     * }|null $filters Optional filters
      * @throws MonnifyException
      */
-    public function getBulkTransferTransactions(string $batchReference): GetBulkTransferTransactionsResponse
+    public function listBulkTransfers(TransferFilterData|array|null $filters = null)
+    {
+        if (is_array($filters)) {
+            $filters = TransferFilterData::fromArray($filters);
+        }
+
+        $queryString = $filters ? $filters->toQueryString() : '';
+        $response = $this->client->get(self::BASE_PATH . "/bulk/transactions");
+        return PaginatedResponse::fromArray($response, BulkTransferDetails::fromArray(...));
+    }
+
+    /**
+     * Gets the list of transfers in a bulk transfer.
+     *
+     * @param string $batchReference Batch reference
+     * @return PaginatedResponse<TransferDetails> Response data
+     * @throws MonnifyException
+     */
+    public function getBulkTransferTransactions(string $batchReference): PaginatedResponse
     {
         if (empty($batchReference)) {
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
         $response = $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}/transactions");
-        return GetBulkTransferTransactionsResponse::fromArray($response);
+        return PaginatedResponse::fromArray($response, TransferDetails::fromArray(...));
     }
 
     /**
@@ -271,6 +299,7 @@ class TransferService
      */
     public function getBulkTransferStatus(string $batchReference): GetBulkTransferStatusResponse
     {
+        throw new MonnifyException('This endpoint no longer exists in Monnify\'s API.');
         if (empty($batchReference)) {
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
@@ -281,6 +310,8 @@ class TransferService
 
     /**
      * Search disbursement transactions
+     * NOTE: It's best to avoid using this method. Monnify's API endpoints for it are
+     * very unstable and keep changing! Not to mention the poor documentation for it.
      *
      * @param TransferFilterData|array{
      *  page?: int,
@@ -301,22 +332,22 @@ class TransferService
             $filters = TransferFilterData::fromArray($filters);
         }
 
-        $queryString = $filters ? $filters->toQueryString() : '';
-        $response = $this->client->get(self::BASE_PATH . "/search{$queryString}");
+        $queryString = http_build_query([...$filters->toArray(), 'sourceAccountNumber' => $this->client->getConfig()->getWalletAccountNumber()]);
+        $response = $this->client->get(self::BASE_PATH . "/search-transactions{$queryString}");
         return SearchDisbursementsResponse::fromArray($response);
     }
 
     /**
      * Get wallet balance
      *
-     * @param string $accountNumber Account number
+     * @param string $accountNumber Account number. If null, the default wallet will be used.
      * @return GetWalletBalanceResponse Response data
      * @throws MonnifyException
      */
-    public function getWalletBalance(string $accountNumber): GetWalletBalanceResponse
+    public function getWalletBalance(?string $accountNumber = null): GetWalletBalanceResponse
     {
         if (empty($accountNumber)) {
-            throw new MonnifyException('Account number is required', 400, null, 'VALIDATION_ERROR');
+            $accountNumber = $this->client->getConfig()->getWalletAccountNumber();
         }
 
         $response = $this->client->get(self::BASE_PATH . "/wallet-balance?accountNumber={$accountNumber}");

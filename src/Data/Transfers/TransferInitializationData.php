@@ -9,7 +9,7 @@ use PraiseDare\Monnify\Exceptions\ValidationException;
 /**
  * Data transfer object for single transfer operations
  */
-class TransferData
+class TransferInitializationData
 {
     public function __construct(
         public readonly float $amount,
@@ -18,11 +18,19 @@ class TransferData
         public readonly string $destinationBankCode,
         public readonly string $destinationAccountNumber,
         public readonly string $destinationAccountName,
-        public readonly string $sourceAccountNumber,
+        /**
+         * Nullable if the transfer is part of a bulk transfer.
+         */
+        public readonly ?string $sourceAccountNumber = null,
         public readonly string $currency = 'NGN',
         public readonly ?string $beneficiaryEmail = null,
         public readonly ?string $beneficiaryPhone = null,
         public readonly ?array $metadata = null,
+        /**
+         * If true, then a sourceAccountNumber isn't required as it would have
+         * already been set in the parent bulk transfer.
+         */
+        public bool $isBulkTransferItem = false,
     ) {
         $this->validate();
     }
@@ -58,8 +66,8 @@ class TransferData
             throw new ValidationException('Destination account name is required', 'destinationAccountName');
         }
 
-        if (empty($this->sourceAccountNumber)) {
-            throw new ValidationException('Source account number is required', 'sourceAccountNumber');
+        if (!$this->isBulkTransferItem && empty($this->sourceAccountNumber)) {
+            throw new ValidationException('Source account number is required for single transfers', 'sourceAccountNumber');
         }
     }
 
@@ -81,7 +89,7 @@ class TransferData
      * } $data
      * @return self
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data, $isBulkTransferItem = false): self
     {
         return new self(
             amount: $data['amount'],
@@ -94,7 +102,8 @@ class TransferData
             currency: $data['currency'] ?? 'NGN',
             beneficiaryEmail: $data['beneficiaryEmail'] ?? null,
             beneficiaryPhone: $data['beneficiaryPhone'] ?? null,
-            metadata: $data['metadata'] ?? null
+            metadata: $data['metadata'] ?? null,
+            isBulkTransferItem: $isBulkTransferItem,
         );
     }
 
@@ -113,7 +122,6 @@ class TransferData
             'destinationAccountNumber' => $this->destinationAccountNumber,
             'destinationAccountName' => $this->destinationAccountName,
             'currency' => $this->currency,
-            'sourceAccountNumber' => $this->sourceAccountNumber,
         ];
 
         if ($this->beneficiaryEmail !== null) {
@@ -126,6 +134,10 @@ class TransferData
 
         if ($this->metadata !== null) {
             $payload['metadata'] = $this->metadata;
+        }
+
+        if ($this->sourceAccountNumber !== null) {
+            $payload['sourceAccountNumber'] = $this->sourceAccountNumber;
         }
 
         return $payload;

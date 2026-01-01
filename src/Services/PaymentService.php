@@ -6,6 +6,11 @@ namespace PraiseDare\Monnify\Services;
 
 use PraiseDare\Monnify\Http\Client;
 use PraiseDare\Monnify\Exceptions\MonnifyException;
+use PraiseDare\Monnify\Data\Payments\PaymentData;
+use PraiseDare\Monnify\Data\Payments\PaymentFilterData;
+use PraiseDare\Monnify\Data\Payments\Responses\InitiatePaymentResponse;
+use PraiseDare\Monnify\Data\Payments\Responses\VerifyPaymentResponse;
+use PraiseDare\Monnify\Data\Payments\Responses\GetAllPaymentsResponse;
 
 /**
  * Payment Service for Monnify API
@@ -30,74 +35,54 @@ class PaymentService
     /**
      * Initialize a payment transaction
      *
-     * @param array{
-     *  amount: float,
-     *  customerName: string,
-     *  customerEmail: string,
-     *  paymentReference: string,
-     *  paymentDescription?: string,
-     *  currencyCode?: string,
-     *  contractCode?: string,
-     *  redirectUrl: string,
-     *  paymentMethods?: array<string>,
-     *  customerPhone?: string,
-     *  metadata?: array<string, mixed>
-     * } $data Payment data
-     * @return array Response data
+     * @param PaymentData $data Payment data
+     * @return InitiatePaymentResponse Response data
      * @throws MonnifyException
      */
-    public function initialize(array $data): array
+    public function initialize(PaymentData $data): InitiatePaymentResponse
     {
         $this->validatePaymentData($data);
 
-        $payload = [
-            'amount' => $data['amount'],
-            'customerName' => $data['customerName'],
-            'customerEmail' => $data['customerEmail'],
-            'paymentReference' => $data['paymentReference'],
-            'paymentDescription' => $data['paymentDescription'] ?? 'Payment for services',
-            'currencyCode' => $data['currencyCode'] ?? 'NGN',
-            'contractCode' => $data['contractCode'] ?? $this->client->getConfig()->getContractCode(),
-            'redirectUrl' => $data['redirectUrl'],
-            'paymentMethods' => $data['paymentMethods'] ?? ['CARD', 'ACCOUNT_TRANSFER', 'USSD'],
-        ];
+        $payload = $data->toArray();
 
-        // Add optional fields if provided
-        if (isset($data['customerPhone'])) {
-            $payload['customerPhone'] = $data['customerPhone'];
+        // Add contract code if not provided
+        if (!isset($payload['contractCode'])) {
+            $payload['contractCode'] = $this->client->getConfig()->getContractCode();
         }
 
-        if (isset($data['metadata'])) {
-            $payload['metadata'] = $data['metadata'];
-        }
+        $response = $this->client->post('/api/v1/merchant/transactions/init-transaction', $payload);
 
-        return $this->client->post('/api/v1/merchant/transactions/init-transaction', $payload);
+        return InitiatePaymentResponse::fromArray($response);
     }
 
     /**
      * Verify a payment transaction
      *
      * @param string $transactionReference Transaction reference
-     * @return array Response data
+     * @return VerifyPaymentResponse Response data
      * @throws MonnifyException
      */
-    public function verify(string $transactionReference): array
+    public function verify(string $transactionReference): VerifyPaymentResponse
     {
         if (empty($transactionReference)) {
             throw new MonnifyException('Transaction reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        return $this->client->get("/api/v1/merchant/transactions/query?paymentReference={$transactionReference}");
+        $transactionReference = urlencode($transactionReference);
+
+        $response = $this->client->get("/api/v2/transactions/{$transactionReference}");
+
+        return VerifyPaymentResponse::fromArray($response);
     }
 
     /**
      * Get transaction status
      *
-     * @param string $transactionReference Transaction reference
-     * @return array Response data
+     * @param string $transactionReference The Monnify transaction reference
+     * @return VerifyPaymentResponse Response data
      * @throws MonnifyException
      */
-    public function getStatus(string $transactionReference): array
+    public function getStatus(string $transactionReference): VerifyPaymentResponse
     {
         return $this->verify($transactionReference);
     }
@@ -106,10 +91,10 @@ class PaymentService
      * Get transaction details
      *
      * @param string $transactionReference Transaction reference
-     * @return array Response data
+     * @return VerifyPaymentResponse Response data
      * @throws MonnifyException
      */
-    public function getDetails(string $transactionReference): array
+    public function getDetails(string $transactionReference): VerifyPaymentResponse
     {
         return $this->verify($transactionReference);
     }
@@ -117,140 +102,151 @@ class PaymentService
     /**
      * Get all transactions
      *
-     * @param array $filters Filter parameters
-     * @return array Response data
+     * @param PaymentFilterData|null $filters Filter parameters
+     * @return GetAllPaymentsResponse Response data
      * @throws MonnifyException
      */
-    public function getAll(array $filters = []): array
+    public function getAll(?PaymentFilterData $filters = null): GetAllPaymentsResponse
     {
-        $queryParams = [];
+        $endpoint = '/api/v1/transactions/search';
 
-        if (isset($filters['page'])) {
-            $queryParams[] = "page={$filters['page']}";
+        if ($filters !== null) {
+            $queryParams = $filters->toQueryParams();
+            if (!empty($queryParams)) {
+                $endpoint .= '?' . http_build_query($queryParams);
+            }
         }
 
-        if (isset($filters['size'])) {
-            $queryParams[] = "size={$filters['size']}";
-        }
+        $response = $this->client->get($endpoint);
 
-        if (isset($filters['fromDate'])) {
-            $queryParams[] = "fromDate={$filters['fromDate']}";
-        }
-
-        if (isset($filters['toDate'])) {
-            $queryParams[] = "toDate={$filters['toDate']}";
-        }
-
-        if (isset($filters['status'])) {
-            $queryParams[] = "status={$filters['status']}";
-        }
-
-        $endpoint = '/api/v1/merchant/transactions';
-        if (!empty($queryParams)) {
-            $endpoint .= '?' . implode('&', $queryParams);
-        }
-
-        return $this->client->get($endpoint);
+        return GetAllPaymentsResponse::fromArray($response);
     }
 
     /**
      * Validate payment data
      *
-     * @param array $data Payment data
+     * @param PaymentData $data Payment data
      * @throws MonnifyException
      */
-    private function validatePaymentData(array $data): void
+    private function validatePaymentData(PaymentData $data): void
     {
-        $requiredFields = [
-            'amount',
-            'customerName',
-            'customerEmail',
-            'paymentReference',
-            'redirectUrl'
-        ];
-
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || empty($data[$field])) {
-                throw new MonnifyException("Field '{$field}' is required", 400, null, 'VALIDATION_ERROR');
-            }
-        }
-
         // Validate amount
-        if (!is_numeric($data['amount']) || $data['amount'] <= 0) {
+        if ($data->amount <= 0) {
             throw new MonnifyException('Amount must be a positive number', 400, null, 'VALIDATION_ERROR');
         }
 
         // Validate email
-        if (!filter_var($data['customerEmail'], FILTER_VALIDATE_EMAIL)) {
+        if (!filter_var($data->customerEmail, FILTER_VALIDATE_EMAIL)) {
             throw new MonnifyException('Invalid email address', 400, null, 'VALIDATION_ERROR');
         }
 
         // Validate payment reference
-        if (strlen($data['paymentReference']) > 100) {
+        if (strlen($data->paymentReference) > 100) {
             throw new MonnifyException('Payment reference must not exceed 100 characters', 400, null, 'VALIDATION_ERROR');
         }
 
         // Validate redirect URL
-        if (!filter_var($data['redirectUrl'], FILTER_VALIDATE_URL)) {
+        if (!filter_var($data->redirectUrl, FILTER_VALIDATE_URL)) {
             throw new MonnifyException('Invalid redirect URL', 400, null, 'VALIDATION_ERROR');
         }
     }
 
     /**
-     * Check if payment is successful
-     *
-     * @param array $response Payment response
-     * @return bool
-     */
-    public function isSuccessful(array $response): bool
-    {
-        return isset($response['responseBody']['paymentStatus'])
-            && $response['responseBody']['paymentStatus'] === 'PAID';
-    }
-
-    /**
-     * Check if payment is pending
-     *
-     * @param array $response Payment response
-     * @return bool
-     */
-    public function isPending(array $response): bool
-    {
-        return isset($response['responseBody']['paymentStatus'])
-            && $response['responseBody']['paymentStatus'] === 'PENDING';
-    }
-
-    /**
-     * Check if payment failed
-     *
-     * @param array $response Payment response
-     * @return bool
-     */
-    public function isFailed(array $response): bool
-    {
-        return isset($response['responseBody']['paymentStatus'])
-            && $response['responseBody']['paymentStatus'] === 'FAILED';
-    }
-
-    /**
      * Get payment URL from response
      *
-     * @param array $response Payment response
-     * @return string|null
+     * @param InitiatePaymentResponse $response Payment response
+     * @return string
      */
-    public function getPaymentUrl(array $response): ?string
+    public function getPaymentUrl(InitiatePaymentResponse $response): string
     {
-        return $response['responseBody']['checkoutUrl'] ?? null;
+        return $response->getPaymentUrl();
     }
 
     /**
      * Get transaction reference from response
      *
-     * @param array $response Payment response
-     * @return string|null
+     * @param InitiatePaymentResponse $response Payment response
+     * @return string
      */
-    public function getTransactionReference(array $response): ?string
+    public function getTransactionReference(InitiatePaymentResponse $response): string
     {
-        return $response['responseBody']['transactionReference'] ?? null;
+        return $response->getTransactionReference();
+    }
+
+    /**
+     * Check if payment is successful
+     *
+     * @param VerifyPaymentResponse $response Payment verification response
+     * @return bool
+     */
+    public function isSuccessful(VerifyPaymentResponse $response): bool
+    {
+        return $response->isSuccessful();
+    }
+
+    /**
+     * Check if payment is pending
+     *
+     * @param VerifyPaymentResponse $response Payment verification response
+     * @return bool
+     */
+    public function isPending(VerifyPaymentResponse $response): bool
+    {
+        return $response->isPending();
+    }
+
+    /**
+     * Check if payment failed
+     *
+     * @param VerifyPaymentResponse $response Payment verification response
+     * @return bool
+     */
+    public function isFailed(VerifyPaymentResponse $response): bool
+    {
+        return $response->isFailed();
+    }
+
+    /**
+     * Check if payment expired
+     *
+     * @param VerifyPaymentResponse $response Payment verification response
+     * @return bool
+     */
+    public function isExpired(VerifyPaymentResponse $response): bool
+    {
+        return $response->isExpired();
+    }
+
+    /**
+     * Get payment status from verification response
+     *
+     * @param VerifyPaymentResponse $response Payment verification response
+     * @return string
+     */
+    public function getPaymentStatus(VerifyPaymentResponse $response): string
+    {
+        return $response->getPaymentStatus();
+    }
+
+    /**
+     * Get amount paid from verification response
+     *
+     * @param VerifyPaymentResponse $response Payment verification response
+     * @return float
+     */
+    public function getAmountPaid(VerifyPaymentResponse $response): float
+    {
+        return $response->getAmountPaid();
+    }
+
+    /**
+     * Get total payable from verification response
+     *
+     * @param VerifyPaymentResponse $response Payment verification response
+     * @return float
+     */
+    public function getTotalPayable(VerifyPaymentResponse $response): float
+    {
+        return $response->getTotalPayable();
     }
 }

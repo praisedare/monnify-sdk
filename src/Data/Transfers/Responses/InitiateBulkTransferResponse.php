@@ -50,10 +50,20 @@ class InitiateBulkTransferResponse
 class InitiateBulkTransferResponseBody
 {
     public function __construct(
+        /**
+         * Total amount transferred.
+         */
         public readonly float $totalAmount,
+        /**
+         * Gross fee charged for the transfers
+         */
         public readonly float $totalFee,
+        /**
+         * The reference of the batch transaction
+         */
         public readonly string $batchReference,
         public readonly string $batchStatus,
+        /** The number of transactions in the bulk transfer */
         public readonly int $totalTransactions,
         public readonly string $dateCreated
     ) {

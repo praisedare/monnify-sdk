@@ -9,10 +9,10 @@ use PraiseDare\Monnify\Exceptions\ValidationException;
 /**
  * Data transfer object for bulk transfer operations
  */
-class BulkTransferData
+class BulkTransferInitializationData
 {
     /**
-     * @param TransferData[] $transactionList
+     * @param TransferInitializationData[] $transactionList
      */
     public function __construct(
         public readonly string $title,
@@ -23,10 +23,10 @@ class BulkTransferData
         public readonly string $currency = 'NGN',
         public readonly string $onValidationFailure = 'CONTINUE',
         /**
-         * Used to determine how often Monnify should notify the merchant of progress when processing a batch transfer. The options are 10, 20, 50 and 100 and they represent percentages. i.e. 20 means notify me at intervals of 20% (20%, 40%, 60%, 80% ,100%).
+         * Used to determine how often Monnify should notify the merchant of progress when processing a batch transfer. The options are and 25, 50, 75 and 100.
          * @var int
          */
-        public readonly int $notificationInterval = 5,
+        public readonly int $notificationInterval = 25,
     ) {
         $this->validate();
     }
@@ -58,8 +58,16 @@ class BulkTransferData
             throw new ValidationException('Transactions must be a non-empty array', 'transactions');
         }
 
+        if ($this->notificationInterval % 25
+            || $this->notificationInterval < 25
+            || $this->notificationInterval > 100
+        ) {
+            throw new ValidationException('Invalid notification interval. '
+                .'Must be a multiple of 25 and be between 25 and 100.');
+        }
+
         foreach ($this->transactionList as $index => $transaction) {
-            if (!$transaction instanceof TransferData) {
+            if (!$transaction instanceof TransferInitializationData) {
                 throw new ValidationException("Transaction at index {$index} must be an instance of TransferData", "transactions[{$index}]");
             }
         }
@@ -86,6 +94,7 @@ class BulkTransferData
      *    beneficiaryEmail?: string,
      *    beneficiaryPhone?: string,
      *    metadata?: array<string, mixed>
+     *    currency?: string,
      *  }>
      * } $data
      * @return self
@@ -93,7 +102,7 @@ class BulkTransferData
     public static function fromArray(array $data): self
     {
         $transactionList = array_map(
-            fn($transaction) => TransferData::fromArray($transaction),
+            fn($transaction) => TransferInitializationData::fromArray($transaction, isBulkTransferItem: true),
             $data['transactionList']
         );
 
@@ -103,7 +112,6 @@ class BulkTransferData
             narration: $data['narration'],
             sourceAccountNumber: $data['sourceAccountNumber'],
             transactionList: $transactionList,
-            currency: $data['currency'] ?? 'NGN',
             onValidationFailure: $data['onValidationFailure'] ?? 'CONTINUE',
             notificationInterval: $data['notificationInterval'] ?? 5
         );
@@ -124,7 +132,7 @@ class BulkTransferData
             'currency' => $this->currency,
             'onValidationFailure' => $this->onValidationFailure,
             'notificationInterval' => $this->notificationInterval,
-            'transactionList' => array_map(fn(TransferData $transaction) => $transaction->toArray(), $this->transactionList),
+            'transactionList' => array_map(fn(TransferInitializationData $transaction) => $transaction->toArray(), $this->transactionList),
         ];
     }
 }

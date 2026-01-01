@@ -14,6 +14,7 @@ class Config
     private string $secretKey;
     private string $apiKey;
     private string $contractCode;
+    private string $walletAccountNumber;
     private string $environment;
     private int $timeout;
     private bool $verifySsl;
@@ -30,7 +31,8 @@ class Config
      *  environment: string,
      *  timeout: int,
      *  verify_ssl: bool,
-     *  webhook_event_handlers: array<string, callable>
+     *  webhook_event_handlers: array<string, callable>,
+     *  wallet_account_number: string,
      * } $config Configuration array
      */
     public function __construct(array $config = [])
@@ -42,6 +44,7 @@ class Config
         $this->timeout = $config['timeout'] ?? 30;
         $this->verifySsl = $config['verify_ssl'] ?? true;
         $this->webhookEventHandlers = $config['webhook_event_handlers'] ?? [];
+        $this->walletAccountNumber = $config['wallet_account_number'] ?? '';
 
         $this->validate();
         $this->setBaseUrl();
@@ -64,6 +67,10 @@ class Config
 
         if (empty($this->contractCode)) {
             throw new \InvalidArgumentException('Contract code is required');
+        }
+
+        if (empty($this->walletAccountNumber)) {
+            throw new \InvalidArgumentException('Wallet Account Number is required');
         }
 
         if (!in_array($this->environment, ['sandbox', 'live'])) {
@@ -120,6 +127,16 @@ class Config
     public function getContractCode(): string
     {
         return $this->contractCode;
+    }
+
+    /**
+     * Get Wallet Account Number
+     *
+     * @return string
+     */
+    public function getWalletAccountNumber(): string
+    {
+        return $this->walletAccountNumber;
     }
 
     /**
