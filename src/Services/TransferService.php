@@ -240,7 +240,7 @@ class TransferService
         }
 
         $queryString = $filters ? $filters->toQueryString() : '';
-        $response = $this->client->get(self::BASE_PATH . "/bulk/transactions");
+        $response = $this->client->get(self::BASE_PATH . "/bulk");
         return PaginatedResponse::fromArray($response, BulkTransferDetails::fromArray(...));
     }
 
@@ -251,31 +251,35 @@ class TransferService
      * @return PaginatedResponse<TransferDetails> Response data
      * @throws MonnifyException
      */
-    public function getBulkTransferTransactions(string $batchReference): PaginatedResponse
+    public function getBulkTransferTransactions(string $batchReference, TransferFilterData|array|null $filters = null): PaginatedResponse
     {
         if (empty($batchReference)) {
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        $response = $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}/transactions");
+        if (is_array($filters)) {
+            $filters = TransferFilterData::fromArray($filters);
+        }
+        $queryString = $filters ? $filters->toQueryString() : '';
+
+        $response = $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}/transactions{$queryString}");
         return PaginatedResponse::fromArray($response, TransferDetails::fromArray(...));
     }
 
     /**
-     * Get bulk transfer status
+     * Get details of a particular bulk transfer
      *
      * @param string $batchReference Batch reference
      * @return GetBulkTransferStatusResponse Response data
      * @throws MonnifyException
      */
-    public function getBulkTransferStatus(string $batchReference): GetBulkTransferStatusResponse
+    public function getBulkTransferSummary(string $batchReference): GetBulkTransferStatusResponse
     {
-        throw new MonnifyException('This endpoint no longer exists in Monnify\'s API.');
         if (empty($batchReference)) {
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
         }
 
-        $response = $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}");
+        $response = $this->client->get(self::BASE_PATH . "/batch/summary?reference={$batchReference}");
         return GetBulkTransferStatusResponse::fromArray($response);
     }
 

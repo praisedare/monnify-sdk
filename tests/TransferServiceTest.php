@@ -12,6 +12,8 @@ use PraiseDare\Monnify\Config\Config;
 use PraiseDare\Monnify\Data\Common\PaginatedResponse;
 use PraiseDare\Monnify\Data\Transfers\BulkTransferDetails;
 use PraiseDare\Monnify\Data\Transfers\BulkTransferInitializationData;
+use PraiseDare\Monnify\Data\Transfers\BulkTransferSummary;
+use PraiseDare\Monnify\Data\Transfers\Responses\GetBulkTransferStatusResponse;
 use PraiseDare\Monnify\Data\Transfers\Responses\GetSingleTransferStatusResponse;
 use PraiseDare\Monnify\Data\Transfers\Responses\GetWalletBalanceResponse;
 use PraiseDare\Monnify\Data\Transfers\Responses\InitiateAsyncTransferResponse;
@@ -142,7 +144,6 @@ class TransferServiceTest extends TestCase
         ];
 
         $result = $this->transferService->initiateSingle($transferData);
-        // dump($result);
         $this->isInstanceOf(InitiateAsyncTransferResponse::class);
         $this->assertTrue($result->requestSuccessful);
     }
@@ -159,7 +160,7 @@ class TransferServiceTest extends TestCase
             destinationAccountNumber: str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT) . str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT),
             currency: 'NGN',
             isBulkTransferItem: true,
-        ), range(1, 5));
+        ), range(10, 20));
         $bulkData = new BulkTransferInitializationData(
             title: 'Test Bulk Transfer',
             batchReference: $batchRef = 'XBATCH_' . time() . '_' . rand(1000, 9999),
@@ -299,9 +300,30 @@ class TransferServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_get_bulk_transfer_status()
+    #[Depends('it_can_initiate_bulk_transfer')]
+    public function it_can_get_bulk_transfer_summary(InitiateBulkTransferResponse $bulkTransfer)
     {
-        $this->markTestSkipped('Monnify has removed the API for getting details of a single batch transfer');
+        $batchReference = $bulkTransfer->responseBody->batchReference;
+
+        $result = $this->transferService->getBulkTransferSummary($batchReference);
+        $this->assertInstanceOf(GetBulkTransferStatusResponse::class, $result);
+        $this->assertInstanceOf(BulkTransferSummary::class, $result->responseBody);
+
+        $summary = $result->responseBody;
+        $this->assertObjectHasProperty('title', $summary);
+        $this->assertObjectHasProperty('title', $summary);
+        $this->assertObjectHasProperty('totalAmount', $summary);
+        $this->assertObjectHasProperty('totalFee', $summary);
+        $this->assertObjectHasProperty('batchReference', $summary);
+        $this->assertObjectHasProperty('totalTransactionsCount', $summary);
+        $this->assertObjectHasProperty('failedCount', $summary);
+        $this->assertObjectHasProperty('successfulCount', $summary);
+        $this->assertObjectHasProperty('pendingCount', $summary);
+        $this->assertObjectHasProperty('pendingAmount', $summary);
+        $this->assertObjectHasProperty('failedAmount', $summary);
+        $this->assertObjectHasProperty('successfulAmount', $summary);
+        $this->assertObjectHasProperty('batchStatus', $summary);
+        $this->assertObjectHasProperty('dateCreated', $summary);
     }
 
     #[Test]
@@ -310,17 +332,42 @@ class TransferServiceTest extends TestCase
     {
         $batchReference = $bulkTransfer->responseBody->batchReference;
 
-        $result = $this->transferService->getBulkTransferTransactions($batchReference);
+        $result = $this->transferService->getBulkTransferTransactions($batchReference, ['pageNo' => 1, 'pageSize' => 5]);
         $this->assertInstanceOf(PaginatedResponse::class, $result);
         $this->assertNotEmpty($result->responseBody->content, 'No transactions listed in bulk transfer');
         $this->assertInstanceOf(TransferDetails::class, $result->responseBody->content[0]);
+        $result2 = $this->transferService->getBulkTransferTransactions($batchReference, ['pageNo' => 2, 'pageSize' => 5]);
+    }
+
+    #[Test]
+    #[Depends('it_can_initiate_bulk_transfer')]
+    public function it_can_traverse_bulk_transfer_transactions(InitiateBulkTransferResponse $bulkTransferResponse)
+    {
+        $filters = [
+            'pageSize' => $size = 5,
+            'pageNo' => $page = 1,
+        ];
+
+        $batchReference = $bulkTransferResponse->responseBody->batchReference;
+        $result = $this->transferService->getBulkTransferTransactions($batchReference, $filters);
+        $this->assertInstanceOf(PaginatedResponse::class, $result);
+        $this->assertTrue($result->requestSuccessful);
+        $this->assertIsArray($result->responseBody->content);
+        $this->assertNotEmpty($result->responseBody->content, 'Received empty list of transfers within Bulk Transfer');
+        $this->assertInstanceOf(TransferDetails::class, $result->responseBody->content[0]);
+
+        $this->assertEquals($result->responseBody->pageable->pageNumber, 1);
+
+        // Page 2
+        $filters['pageNo']++;
+        $result2 = $this->transferService->getBulkTransferTransactions($batchReference, $filters);
+        $this->assertEquals($result2->responseBody->pageable->pageNumber, 2);
+
     }
 
     #[Test]
     public function it_can_list_bulk_transfers()
     {
-        $this->markTestSkipped('Monnify has removed the endpoint for listing bulk transfers');
-
         $filters = [
             'pageSize' => $size = rand(5, 10),
             'pageNo' => $page = 1,
@@ -337,12 +384,12 @@ class TransferServiceTest extends TestCase
     #[Test]
     public function it_can_list_bulk_transfers_without_filters()
     {
-        $this->markTestSkipped('Monnify has removed the endpoint for listing bulk transfers');
-
-        // $result = $this->transferService->listSingleTransfers();
-        // $this->assertInstanceOf(ListSingleTransfersResponse::class, $result);
-        // $this->assertTrue($result->requestSuccessful);
-        // $this->assertIsArray($result->responseBody->content);
+        $result = $this->transferService->listBulkTransfers();
+        $this->assertInstanceOf(PaginatedResponse::class, $result);
+        $this->assertTrue($result->requestSuccessful);
+        $this->assertIsArray($result->responseBody->content);
+        $this->assertNotEmpty($result->responseBody->content, 'Received empty list of bulk transfers');
+        $this->assertInstanceOf(BulkTransferDetails::class, $result->responseBody->content[0]);
     }
 
     #[Test]
