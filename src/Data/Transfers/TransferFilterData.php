@@ -9,8 +9,12 @@ namespace PraiseDare\Monnify\Data\Transfers;
  */
 class TransferFilterData
 {
+    /**
+     * @param int $pageNo The page to go to. Starts from 0
+     * @param int $pageSize The number of items per page. Min: 5
+     */
     public function __construct(
-        public readonly int $pageNo = 1,
+        public readonly int $pageNo = 0,
         public readonly int $pageSize = 10,
         public readonly ?string $from = null,
         public readonly ?string $startDate = null,
@@ -20,7 +24,7 @@ class TransferFilterData
         public readonly ?int $amountFrom = null,
         public readonly ?int $amountTo = null,
     ) {
-        assert($pageNo >= 1, '$pageNo must be at least 1');
+        assert($pageNo >= 0, '$pageNo must be at least 0');
         assert($pageSize >= 5, '$pageNo must be at least 5');
     }
 
@@ -42,16 +46,7 @@ class TransferFilterData
      */
     public static function fromArray(array $data): self
     {
-        return new self(
-            pageNo: $data['pageNo'],
-            pageSize: $data['pageSize'],
-            startDate: $data['startDate'] ?? null,
-            endDate: $data['endDate'] ?? null,
-            transactionReference: $data['transactionReference'] ?? null,
-            sourceAccountNumber: $data['sourceAccountNumber'] ?? null,
-            amountFrom: $data['amountFrom'] ?? null,
-            amountTo: $data['amountTo'] ?? null,
-        );
+        return new self(...$data);
     }
 
     /**
@@ -109,5 +104,10 @@ class TransferFilterData
     {
         $params = $this->toArray();
         return !empty($params) ? '?' . http_build_query($params) : '';
+    }
+
+    public function with(array $newFields): self
+    {
+        return self::fromArray([...$this->toArray(), ...$newFields]);
     }
 }

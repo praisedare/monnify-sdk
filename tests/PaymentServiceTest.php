@@ -200,7 +200,7 @@ class PaymentServiceTest extends TestCase
 
         $response = $this->paymentService->getStatus($initResponse->getTransactionReference());
 
-        dump($initResponse->getPaymentUrl());
+        // dump($initResponse->getPaymentUrl());
         $this->assertInstanceOf(VerifyPaymentResponse::class, $response);
         $this->assertTrue($response->requestSuccessful);
         $this->assertEquals($transactionReference, $response->getTransactionReference());
@@ -225,53 +225,6 @@ class PaymentServiceTest extends TestCase
         $this->expectExceptionMessage('Transaction reference is required');
 
         $this->paymentService->getStatus('');
-    }
-
-    #[Test]
-    public function it_can_get_status_using_verify(): void
-    {
-        // Create a payment first
-        $uniqueRef = 'PAY_STATUS_' . time() . '_' . rand(1000, 9999);
-
-        $paymentData = new PaymentData(
-            amount: 300.00,
-            customerName: 'Status Test User',
-            customerEmail: 'status@example.com',
-            paymentReference: $uniqueRef,
-            redirectUrl: 'https://example.com/callback'
-        );
-
-        $initResponse = $this->paymentService->initialize($paymentData);
-        $transactionReference = $initResponse->getTransactionReference();
-
-        // Store for cleanup
-        self::$createdPayments[] = [
-            'paymentReference' => $initResponse->getPaymentReference(),
-            'transactionReference' => $transactionReference
-        ];
-
-        // Wait for transaction to be indexed
-        sleep(2);
-
-        try {
-            // Test getStatus method (should work same as verify)
-            $response = $this->paymentService->getStatus($transactionReference);
-
-            $this->assertInstanceOf(VerifyPaymentResponse::class, $response);
-            $this->assertTrue($response->requestSuccessful);
-            $this->assertEquals($transactionReference, $response->getTransactionReference());
-
-            // Test helper methods work
-            $status = $this->paymentService->getPaymentStatus($response);
-            $this->assertIsString($status);
-            $this->assertContains($status, ['PENDING', 'PAID', 'FAILED', 'EXPIRED']);
-        } catch (MonnifyException $e) {
-            dump('got error in it_can_get_status_using_verify: ' . $e->getMessage());
-            $this->logger->error('it_can_get_status_using_verify', ['exception' => $e]);
-            // var_dump($e);
-            $this->assertStringContainsString('Could not find transaction', $e->getMessage());
-            $this->markTestSkipped('Transaction not immediately available in sandbox - this is expected behavior');
-        }
     }
 
     #[Test]

@@ -210,7 +210,7 @@ class TransferService
      * }|null $filters Optional filters
      * @throws MonnifyException
      */
-    public function listSingleTransfers(TransferFilterData|array|null $filters = null)
+    public function listSingleTransfers(TransferFilterData|array $filters = []): PaginatedResponse
     {
         if (is_array($filters)) {
             $filters = TransferFilterData::fromArray($filters);
@@ -218,7 +218,11 @@ class TransferService
 
         $queryString = $filters ? $filters->toQueryString() : '';
         $response = $this->client->get(self::BASE_PATH . "/single/transactions{$queryString}");
-        return PaginatedResponse::fromArray($response, TransferDetails::fromArray(...));
+        return PaginatedResponse::fromArray(
+            $response,
+            TransferDetails::fromArray(...),
+            fn($pageNo) => $this->listSingleTransfers($filters->with(['pageNo' => $pageNo]))
+        );
     }
 
     /**
@@ -233,7 +237,7 @@ class TransferService
      * }|null $filters Optional filters
      * @throws MonnifyException
      */
-    public function listBulkTransfers(TransferFilterData|array|null $filters = null)
+    public function listBulkTransfers(TransferFilterData|array|null $filters = null): PaginatedResponse
     {
         if (is_array($filters)) {
             $filters = TransferFilterData::fromArray($filters);
@@ -241,7 +245,11 @@ class TransferService
 
         $queryString = $filters ? $filters->toQueryString() : '';
         $response = $this->client->get(self::BASE_PATH . "/bulk");
-        return PaginatedResponse::fromArray($response, BulkTransferDetails::fromArray(...));
+        return PaginatedResponse::fromArray(
+            $response,
+            BulkTransferDetails::fromArray(...),
+            fn($pageNo) => $this->listBulkTransfers($filters->with(compact('pageNo'))),
+        );
     }
 
     /**
@@ -251,7 +259,7 @@ class TransferService
      * @return PaginatedResponse<TransferDetails> Response data
      * @throws MonnifyException
      */
-    public function getBulkTransferTransactions(string $batchReference, TransferFilterData|array|null $filters = null): PaginatedResponse
+    public function getBulkTransferTransactions(string $batchReference, TransferFilterData|array $filters = []): PaginatedResponse
     {
         if (empty($batchReference)) {
             throw new MonnifyException('Batch reference is required', 400, null, 'VALIDATION_ERROR');
@@ -260,10 +268,14 @@ class TransferService
         if (is_array($filters)) {
             $filters = TransferFilterData::fromArray($filters);
         }
-        $queryString = $filters ? $filters->toQueryString() : '';
+        $queryString = $filters->toQueryString();
 
         $response = $this->client->get(self::BASE_PATH . "/bulk/{$batchReference}/transactions{$queryString}");
-        return PaginatedResponse::fromArray($response, TransferDetails::fromArray(...));
+        return PaginatedResponse::fromArray(
+            $response,
+            TransferDetails::fromArray(...),
+            fn($pageNo) => $this->getBulkTransferTransactions($batchReference, $filters->with(compact('pageNo'))),
+        );
     }
 
     /**

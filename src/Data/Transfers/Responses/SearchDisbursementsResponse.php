@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify\Data\Transfers\Responses;
 
+use PraiseDare\Monnify\Data\Common\Pageable;
+use PraiseDare\Monnify\Data\Common\Sort;
+
 /**
  * Response for searching disbursements
  */

@@ -9,6 +9,12 @@ namespace PraiseDare\Monnify\Data\Transfers;
  */
 class TransferDetails
 {
+    /**
+     * @param string $reference The user-supplied reference
+     * @param string $transactionReference The monnify-generated reference for the transaction
+     * @param ?string $destinationAccountName Null if the account could not be resolved
+     * @param ?string $destinationBankName Null if the account could not be resolved
+     */
     public function __construct(
         public readonly float $amount,
         public readonly string $reference,
@@ -22,13 +28,7 @@ class TransferDetails
         public readonly string $destinationBankCode,
         public readonly string $sourceAccountNumber,
         public readonly string $destinationAccountNumber,
-        /**
-         * Null if the account could not be resolved
-         */
         public readonly ?string $destinationAccountName,
-        /**
-         * Null if the account could not be resolved
-         */
         public readonly ?string $destinationBankName,
         public readonly string $createdOn
     ) {

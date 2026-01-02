@@ -13,6 +13,7 @@ class PaginatedResponseBody
 {
     /**
      * @param T[] $content
+     * @param \Closure(int): PaginatedResponse<T> $pageGenerator Helper function that navigates to a specific page of the current PaginatedResponse
      */
     public function __construct(
         public readonly array $content,
@@ -25,7 +26,8 @@ class PaginatedResponseBody
         public readonly int $numberOfElements,
         public readonly int $size,
         public readonly int $number,
-        public readonly bool $empty
+        public readonly bool $empty,
+        public readonly ?\Closure $pageGenerator = null,
     ) {
     }
 
@@ -37,7 +39,7 @@ class PaginatedResponseBody
      * @param callable(array): U $mapper Function to convert item array to object
      * @return self<U>
      */
-    public static function fromArray(array $data, callable $mapper): self
+    public static function fromArray(array $data, callable $mapper, \Closure $pageGenerator): self
     {
         $content = array_map($mapper, $data['content']);
 
@@ -52,7 +54,8 @@ class PaginatedResponseBody
             numberOfElements: $data['numberOfElements'],
             size: $data['size'],
             number: $data['number'],
-            empty: $data['empty']
+            empty: $data['empty'],
+            pageGenerator: $pageGenerator,
         );
     }
 
@@ -115,5 +118,35 @@ class PaginatedResponseBody
     public function hasPreviousPage(): bool
     {
         return !$this->first;
+    }
+
+    /**
+     * Navigates to the next page.
+     * Returns null if no `pageGenerator` was set or there is no next page.
+     * @return ?PaginatedResponse<T>
+     */
+    public function goToNextPage(): ?PaginatedResponse
+    {
+        return $this->goToPage($this->pageable->pageNumber + 1);
+    }
+
+    /**
+     * Navigates to the previous page.
+     * Returns null if no `pageGenerator` was set or there is no previous page.
+     * @return ?PaginatedResponse<T>
+     */
+    public function goToPreviousPage(): ?PaginatedResponse
+    {
+        return $this->goToPage($this->pageable->pageNumber - 1);
+    }
+
+    /**
+     * @return ?PaginatedResponse<T>
+     */
+    public function goToPage(int $pageNumber): ?PaginatedResponse
+    {
+        if (!isset($this->pageGenerator) || $pageNumber < 0 || $pageNumber > $this->totalPages)
+            return null;
+        return ($this->pageGenerator)($pageNumber);
     }
 }

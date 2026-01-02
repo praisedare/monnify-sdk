@@ -53,7 +53,7 @@ class PaymentServiceTest extends TestCase
         readline('This test is interactive. Please visit the URL and complete the payment (i.e. choose successful card), then press Enter...');
 
         $verifyResponse = $this->paymentService->getStatus($transactionReference);
-        dump($verifyResponse);
+        // dump($verifyResponse);
 
         $this->assertTrue($verifyResponse->requestSuccessful);
         $this->assertTrue($verifyResponse->isSuccessful(), 'Payment not successful');
@@ -89,7 +89,7 @@ class PaymentServiceTest extends TestCase
         readline('This test is interactive. Please visit the URL and CANCEL or FAIL the payment (e.g. choose card and cancel), then press Enter...');
 
         $verifyResponse = $this->paymentService->getStatus($transactionReference);
-        dump($verifyResponse);
+        // dump($verifyResponse);
 
         $this->assertTrue($verifyResponse->requestSuccessful);
         // Depending on how they "fail" it, it might be FAILED, CANCELLED or PENDING (if abandoned)

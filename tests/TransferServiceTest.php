@@ -362,7 +362,27 @@ class TransferServiceTest extends TestCase
         $filters['pageNo']++;
         $result2 = $this->transferService->getBulkTransferTransactions($batchReference, $filters);
         $this->assertEquals($result2->responseBody->pageable->pageNumber, 2);
+    }
 
+    // TODO: Should move this to a PaginatedResponseTest as it has nothing to do with the TransferService
+    #[Test]
+    #[Depends('it_can_initiate_bulk_transfer')]
+    public function it_can_navigate_between_pages_using_utility_methods(InitiateBulkTransferResponse $bulkTransferResponse)
+    {
+        $batchReference = $bulkTransferResponse->responseBody->batchReference;
+        $result = $this->transferService->getBulkTransferTransactions($batchReference, ['pageSize' => 5]);
+        $this->assertInstanceOf(PaginatedResponse::class, $result);
+        $this->assertTrue($result->requestSuccessful);
+        $this->assertIsArray($result->responseBody->content);
+        $this->assertNotEmpty($result->responseBody->content, 'Received empty page');
+        $this->assertEquals($result->responseBody->pageable->pageNumber, 0, 'Should be on page 0 without TransferFilters');
+        // return;
+
+        $result2 = $result->responseBody->goToNextPage();
+        $this->assertInstanceOf(PaginatedResponse::class, $result2);
+        $this->assertEquals(1, $result2->responseBody->pageable->pageNumber, 'Should be on page 1');
+        $this->assertIsArray($result2->responseBody->content);
+        $this->assertNotEmpty($result2->responseBody->content, 'Received empty page');
     }
 
     #[Test]
