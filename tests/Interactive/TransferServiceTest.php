@@ -34,7 +34,6 @@ class TransferServiceTest extends TestCase
             'narration' => 'Transfer for Auth Test',
             'destinationBankCode' => '058',
             'destinationAccountNumber' => '0123456789',
-            'destinationAccountName' => 'Auth User',
             'sourceAccountNumber' => $this->client->getConfig()->getWalletAccountNumber(),
             'currency' => 'NGN',
         ];

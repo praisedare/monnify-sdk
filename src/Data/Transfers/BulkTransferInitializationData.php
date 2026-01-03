@@ -90,7 +90,6 @@ class BulkTransferInitializationData
      *    narration: string,
      *    destinationBankCode: string,
      *    destinationAccountNumber: string,
-     *    destinationAccountName: string,
      *    beneficiaryEmail?: string,
      *    beneficiaryPhone?: string,
      *    metadata?: array<string, mixed>

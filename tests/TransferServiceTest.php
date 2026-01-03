@@ -16,7 +16,6 @@ use PraiseDare\Monnify\Data\Transfers\BulkTransferSummary;
 use PraiseDare\Monnify\Data\Transfers\Responses\GetBulkTransferStatusResponse;
 use PraiseDare\Monnify\Data\Transfers\Responses\GetSingleTransferStatusResponse;
 use PraiseDare\Monnify\Data\Transfers\Responses\GetWalletBalanceResponse;
-use PraiseDare\Monnify\Data\Transfers\Responses\InitiateAsyncTransferResponse;
 use PraiseDare\Monnify\Data\Transfers\Responses\InitiateBulkTransferResponse;
 use PraiseDare\Monnify\Data\Transfers\Responses\InitiateSingleTransferResponse;
 use PraiseDare\Monnify\Data\Transfers\TransferDetails;
@@ -73,7 +72,6 @@ class TransferServiceTest extends TestCase
             narration: 'Test transfer',
             destinationBankCode: $bankCode,
             destinationAccountNumber: $accountNumber,
-            destinationAccountName: 'Praise Dare',
             sourceAccountNumber: $this->client->getConfig()->getWalletAccountNumber(), // Wallet Account
             currency: 'NGN',
         );
@@ -102,7 +100,6 @@ class TransferServiceTest extends TestCase
             narration: 'Test transfer',
             destinationBankCode: '044',
             destinationAccountNumber: '1234567890',
-            destinationAccountName: 'Test User',
             sourceAccountNumber: '0987654321'
         );
 
@@ -121,7 +118,6 @@ class TransferServiceTest extends TestCase
             'narration' => 'Test transfer',
             'destinationBankCode' => '044',
             'destinationAccountNumber' => '1234567890',
-            'destinationAccountName' => 'Test User',
             'sourceAccountNumber' => '0987654321'
         ];
 
@@ -131,36 +127,38 @@ class TransferServiceTest extends TestCase
     #[Test]
     public function it_can_initiate_async_transfer()
     {
-        $transferData = [
-            'amount' => 200.00,
-            'reference' => 'ASYNC_TRF_' . time() . '_' . rand(1000, 9999),
-            'narration' => 'Async test transfer',
-            'destinationBankCode' => '058',
-            'destinationAccountNumber' => '0987654321',
-            'destinationAccountName' => 'Async User',
-            'sourceAccountNumber' => $this->client->getConfig()->getWalletAccountNumber(),
-            'currency' => 'NGN',
-            'async' => true,
-        ];
+        $transferData = new TransferInitializationData(
+            amount: intdiv(rand(100, 500), 50) * 50,
+            reference: 'ASYNC_TRF_' . time() . '_' . rand(1000, 9999),
+            narration: 'Async test transfer',
+            destinationBankCode: '058',
+            destinationAccountNumber: '0987654321',
+            sourceAccountNumber: $this->client->getConfig()->getWalletAccountNumber(),
+            currency: 'NGN',
+            async: true,
+        );
 
         $result = $this->transferService->initiateSingle($transferData);
-        $this->isInstanceOf(InitiateAsyncTransferResponse::class);
+        $this->assertInstanceOf(InitiateSingleTransferResponse::class, $result);
         $this->assertTrue($result->requestSuccessful);
     }
 
-    #[Test]
-    public function it_can_initiate_bulk_transfer()
+    private function generateTransferTransactions(int $howMany)
     {
-        $transactions = array_map(fn($x) => new TransferInitializationData(
+        return array_map(fn($x) => new TransferInitializationData(
             amount: [$m = rand(100, 200), $m -= $m % 10][1],
             reference: "TRXF_BULK_{$x}_" . time(),
             narration: 'First transfer',
-            destinationAccountName: 'User One',
             destinationBankCode: str_pad((string) rand(0, 999), 3, '0', STR_PAD_LEFT),
             destinationAccountNumber: str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT) . str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT),
             currency: 'NGN',
             isBulkTransferItem: true,
-        ), range(10, 20));
+        ), range(1, $howMany));
+    }
+
+    private function createBulkTransferIntializationData(int $numberOfTransfers)
+    {
+        $transactions = $this->generateTransferTransactions($numberOfTransfers);
         $bulkData = new BulkTransferInitializationData(
             title: 'Test Bulk Transfer',
             batchReference: $batchRef = 'XBATCH_' . time() . '_' . rand(1000, 9999),
@@ -171,6 +169,16 @@ class TransferServiceTest extends TestCase
             onValidationFailure: 'CONTINUE',
             notificationInterval: 25,
         );
+
+        return $bulkData;
+    }
+
+    #[Test]
+    public function it_can_initiate_bulk_transfer()
+    {
+        $bulkData = $this->createBulkTransferIntializationData(15);
+        $batchRef = $bulkData->batchReference;
+        $transactions = $bulkData->transactionList;
 
         $result = $this->transferService->initiateBulk($bulkData);
         $this->assertInstanceOf(InitiateBulkTransferResponse::class, $result);
@@ -188,7 +196,6 @@ class TransferServiceTest extends TestCase
             'amount' => [$m = rand(100, 200), $m -= $m % 10][1],
             'reference' => "TRXF_BULK_{$x}_" . time(),
             'narration' => 'First transfer',
-            'destinationAccountName' => 'User One',
             'destinationBankCode' => str_pad((string) rand(0, 999), 3, '0', STR_PAD_LEFT),
             'destinationAccountNumber' => str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT) . str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT),
             'currency' => 'NGN',
@@ -266,11 +273,12 @@ class TransferServiceTest extends TestCase
         // We need a valid reference. In a real test we might create one first.
         // For now, we'll try with a dummy one and expect a "not found" or similar error,
         // which proves we hit the API.
-        $transferResponse = $this->transferService->initiateSingle($this->getSingleTransferData(amount: 300));
+        $amount = intdiv(rand(100, 600), 40) * 40;
+        $transferResponse = $this->transferService->initiateSingle($this->getSingleTransferData(amount: $amount));
 
         $transferDetails = $this->transferService->getSingleTransferStatus($transferResponse->responseBody->reference);
         $this->assertInstanceOf(GetSingleTransferStatusResponse::class, $transferDetails);
-        $this->assertEquals($transferResponse->responseBody->amount, 300);
+        $this->assertEquals($transferResponse->responseBody->amount, $amount);
     }
 
     #[Test]
@@ -383,6 +391,19 @@ class TransferServiceTest extends TestCase
         $this->assertEquals(1, $result2->responseBody->pageable->pageNumber, 'Should be on page 1');
         $this->assertIsArray($result2->responseBody->content);
         $this->assertNotEmpty($result2->responseBody->content, 'Received empty page');
+    }
+
+    #[Test]
+    public function it_can_load_large_number_of_transactions_in_a_single_page()
+    {
+        $numberOfTransfers = 700;
+        $initiateBulkTransferResponse = $this->transferService->initiateBulk($this->createBulkTransferIntializationData($numberOfTransfers));
+        $batchReference = $initiateBulkTransferResponse->responseBody->batchReference;
+        // dump($batchReference);
+
+        $result = $this->transferService->getBulkTransferTransactions($batchReference, ['pageSize' => $numberOfTransfers]);
+        $this->assertEquals($numberOfTransfers, $result->responseBody->pageable->pageSize, "Page Size is not equal to $numberOfTransfers");
+        // dump(count($result->responseBody->content));
     }
 
     #[Test]

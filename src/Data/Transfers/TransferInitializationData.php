@@ -7,30 +7,26 @@ namespace PraiseDare\Monnify\Data\Transfers;
 use PraiseDare\Monnify\Exceptions\ValidationException;
 
 /**
- * Data transfer object for single transfer operations
+ * Data transfer object for describing single transfer operations
  */
 class TransferInitializationData
 {
+    /**
+     * @param ?string $sourceAccountNumber Nullable if the transfer is part of a bulk transfer, else required
+     * @param bool $isBulkTransferItem If true, then a sourceAccountNumber isn't required as it would have already been set in the parent bulk transfer.
+     */
     public function __construct(
         public readonly float $amount,
         public readonly string $reference,
         public readonly string $narration,
         public readonly string $destinationBankCode,
         public readonly string $destinationAccountNumber,
-        public readonly string $destinationAccountName,
-        /**
-         * Nullable if the transfer is part of a bulk transfer.
-         */
         public readonly ?string $sourceAccountNumber = null,
         public readonly string $currency = 'NGN',
         public readonly ?string $beneficiaryEmail = null,
         public readonly ?string $beneficiaryPhone = null,
         public readonly ?array $metadata = null,
         public readonly bool $async = false,
-        /**
-         * If true, then a sourceAccountNumber isn't required as it would have
-         * already been set in the parent bulk transfer.
-         */
         public bool $isBulkTransferItem = false,
     ) {
         $this->validate();
@@ -63,10 +59,6 @@ class TransferInitializationData
             throw new ValidationException('Destination account number is required', 'destinationAccountNumber');
         }
 
-        if (empty($this->destinationAccountName)) {
-            throw new ValidationException('Destination account name is required', 'destinationAccountName');
-        }
-
         if (!$this->isBulkTransferItem && empty($this->sourceAccountNumber)) {
             throw new ValidationException('Source account number is required for single transfers', 'sourceAccountNumber');
         }
@@ -81,7 +73,6 @@ class TransferInitializationData
      *  narration: string,
      *  destinationBankCode: string,
      *  destinationAccountNumber: string,
-     *  destinationAccountName: string,
      *  sourceAccountNumber: string,
      *  currency?: string,
      *  beneficiaryEmail?: string,
@@ -99,7 +90,6 @@ class TransferInitializationData
             narration: $data['narration'],
             destinationBankCode: $data['destinationBankCode'],
             destinationAccountNumber: $data['destinationAccountNumber'],
-            destinationAccountName: $data['destinationAccountName'],
             sourceAccountNumber: $data['sourceAccountNumber'],
             currency: $data['currency'] ?? 'NGN',
             beneficiaryEmail: $data['beneficiaryEmail'] ?? null,
@@ -123,7 +113,6 @@ class TransferInitializationData
             'narration' => $this->narration,
             'destinationBankCode' => $this->destinationBankCode,
             'destinationAccountNumber' => $this->destinationAccountNumber,
-            'destinationAccountName' => $this->destinationAccountName,
             'currency' => $this->currency,
             'async' => $this->async,
         ];

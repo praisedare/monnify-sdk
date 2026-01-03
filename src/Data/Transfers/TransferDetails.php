@@ -52,7 +52,7 @@ class TransferDetails
             transactionReference: $data['transactionReference'],
             destinationBankCode: $data['destinationBankCode'],
             destinationAccountNumber: $data['destinationAccountNumber'],
-            destinationAccountName: $data['destinationAccountName'],
+            destinationAccountName: $data['destinationAccountName'] ?? null,
             destinationBankName: $data['destinationBankName'],
             createdOn: $data['createdOn']
         );
