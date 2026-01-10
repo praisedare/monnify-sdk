@@ -131,7 +131,7 @@ class BulkTransferInitializationData
             'currency' => $this->currency,
             'onValidationFailure' => $this->onValidationFailure,
             'notificationInterval' => $this->notificationInterval,
-            'transactionList' => array_map(fn(TransferInitializationData $transaction) => $transaction->toArray(), $this->transactionList),
+            'transactionList' => array_values(array_map(fn(TransferInitializationData $transaction) => $transaction->toArray(), $this->transactionList)),
         ];
     }
 }
