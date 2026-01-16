@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify\Data\Transfers\Responses;
 
+use PraiseDare\Monnify\Enums\TransferStatus;
+
 /**
  * Response for initiating a single transfer
  */
@@ -104,12 +106,9 @@ class InitiateSingleTransferResponseBody
         ];
     }
 
-    /**
-     * Check if transfer was successful (2FA disabled)
-     */
-    public function isSuccessful(): bool
+    public function getStatusEnum(): TransferStatus
     {
-        return $this->status === 'SUCCESS';
+        return TransferStatus::from($this->status);
     }
 
     /**
@@ -117,7 +116,7 @@ class InitiateSingleTransferResponseBody
      */
     public function isPendingAuthorization(): bool
     {
-        return $this->status === 'PENDING_AUTHORIZATION';
+        return $this->getStatusEnum() == TransferStatus::PENDING_AUTHORIZATION;
     }
 
     /**
@@ -129,11 +128,24 @@ class InitiateSingleTransferResponseBody
     }
 
     /**
+     * Check if transfer was successful (2FA disabled)
+     */
+    public function isSuccessful(): bool
+    {
+        return $this->getStatusEnum()->isSuccessful();
+    }
+
+    public function isPending(): bool
+    {
+        return $this->getStatusEnum()->isPending();
+    }
+
+    /**
      * Check if transfer failed
      */
     public function isFailed(): bool
     {
-        return $this->status === 'FAILED';
+        return $this->getStatusEnum()->isFailed();
     }
 
     /**
