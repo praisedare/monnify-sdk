@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify\Data\Transfers;
 
+use PraiseDare\Monnify\Traits\HasTransferStatus;
+
 /**
  * Single Transfer Data
  */
 class TransferDetails
 {
+    use HasTransferStatus;
+
     /**
      * @param string $reference The user-supplied reference
      * @param string $transactionReference The monnify-generated reference for the transaction
@@ -79,30 +83,6 @@ class TransferDetails
             'destinationBankName' => $this->destinationBankName,
             'createdOn' => $this->createdOn,
         ];
-    }
-
-    /**
-     * Check if transfer was successful
-     */
-    public function isSuccessful(): bool
-    {
-        return $this->status === 'SUCCESS';
-    }
-
-    /**
-     * Check if transfer is pending
-     */
-    public function isPending(): bool
-    {
-        return $this->status === 'PENDING';
-    }
-
-    /**
-     * Check if transfer failed
-     */
-    public function isFailed(): bool
-    {
-        return $this->status === 'FAILED';
     }
 
     /**
