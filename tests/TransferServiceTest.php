@@ -145,15 +145,19 @@ class TransferServiceTest extends TestCase
 
     private function generateTransferTransactions(int $howMany)
     {
-        return array_map(fn($x) => new TransferInitializationData(
-            amount: [$m = rand(100, 200), $m -= $m % 10][1],
-            reference: "TRXF_BULK_{$x}_" . time(),
-            narration: 'First transfer',
-            destinationBankCode: str_pad((string) rand(0, 999), 3, '0', STR_PAD_LEFT),
-            destinationAccountNumber: str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT) . str_pad((string) rand(0, 9_000), 5, '0', STR_PAD_LEFT),
-            currency: 'NGN',
-            isBulkTransferItem: true,
-        ), range(1, $howMany));
+        $result = [];
+        for ($x = 1; $x <= $howMany; ++$x) {
+            $result[] = new TransferInitializationData(
+                amount: intdiv(rand(100, 900), 10) * 10,
+                reference: "TRXF_BULK_{$x}_" . time(),
+                narration: 'First transfer',
+                destinationBankCode: '033',
+                destinationAccountNumber: '2240967' . str_pad((string) (129 + $x), 3, '0', STR_PAD_LEFT),
+                currency: 'NGN',
+                isBulkTransferItem: true,
+            );
+        }
+        return $result;
     }
 
     private function createBulkTransferIntializationData(int $numberOfTransfers)
@@ -270,9 +274,6 @@ class TransferServiceTest extends TestCase
     #[Test]
     public function it_can_get_single_transfer_status()
     {
-        // We need a valid reference. In a real test we might create one first.
-        // For now, we'll try with a dummy one and expect a "not found" or similar error,
-        // which proves we hit the API.
         $amount = intdiv(rand(100, 600), 40) * 40;
         $transferResponse = $this->transferService->initiateSingle($this->getSingleTransferData(amount: $amount));
 
@@ -309,8 +310,11 @@ class TransferServiceTest extends TestCase
 
     #[Test]
     #[Depends('it_can_initiate_bulk_transfer')]
-    public function it_can_get_bulk_transfer_summary(InitiateBulkTransferResponse $bulkTransfer)
+    public function it_can_get_bulk_transfer_summary(
+        InitiateBulkTransferResponse $bulkTransfer
+    )
     {
+        sleep(2); // wait for monnify to process the transaction.
         $batchReference = $bulkTransfer->responseBody->batchReference;
 
         $result = $this->transferService->getBulkTransferSummary($batchReference);
@@ -336,11 +340,15 @@ class TransferServiceTest extends TestCase
 
     #[Test]
     #[Depends('it_can_initiate_bulk_transfer')]
-    public function it_can_get_bulk_transfer_transactions(InitiateBulkTransferResponse $bulkTransfer)
+    public function it_can_get_bulk_transfer_transactions(
+        InitiateBulkTransferResponse $bulkTransfer
+    )
     {
+        sleep(2); // wait for monnify to process the transaction.
+
         $batchReference = $bulkTransfer->responseBody->batchReference;
 
-        $result = $this->transferService->getBulkTransferTransactions($batchReference, ['pageNo' => 1, 'pageSize' => 5]);
+        $result = $this->transferService->getBulkTransferTransactions($batchReference, ['pageNo' => 0, 'pageSize' => 5]);
         $this->assertInstanceOf(PaginatedResponse::class, $result);
         $this->assertNotEmpty($result->responseBody->content, 'No transactions listed in bulk transfer');
         $this->assertInstanceOf(TransferDetails::class, $result->responseBody->content[0]);
@@ -349,12 +357,15 @@ class TransferServiceTest extends TestCase
 
     #[Test]
     #[Depends('it_can_initiate_bulk_transfer')]
-    public function it_can_traverse_bulk_transfer_transactions(InitiateBulkTransferResponse $bulkTransferResponse)
+    public function it_can_traverse_bulk_transfer_transactions(
+        InitiateBulkTransferResponse $bulkTransferResponse
+    )
     {
         $filters = [
-            'pageSize' => $size = 5,
-            'pageNo' => $page = 1,
+            'pageSize' => 5,
+            'pageNo' => 0,
         ];
+        sleep(2); // wait for monnify to process the transaction.
 
         $batchReference = $bulkTransferResponse->responseBody->batchReference;
         $result = $this->transferService->getBulkTransferTransactions($batchReference, $filters);
@@ -364,12 +375,12 @@ class TransferServiceTest extends TestCase
         $this->assertNotEmpty($result->responseBody->content, 'Received empty list of transfers within Bulk Transfer');
         $this->assertInstanceOf(TransferDetails::class, $result->responseBody->content[0]);
 
-        $this->assertEquals($result->responseBody->pageable->pageNumber, 1);
+        $this->assertEquals($result->responseBody->pageable->pageNumber, $filters['pageNo']);
 
         // Page 2
         $filters['pageNo']++;
         $result2 = $this->transferService->getBulkTransferTransactions($batchReference, $filters);
-        $this->assertEquals($result2->responseBody->pageable->pageNumber, 2);
+        $this->assertEquals($result2->responseBody->pageable->pageNumber, $filters['pageNo']);
     }
 
     // TODO: Should move this to a PaginatedResponseTest as it has nothing to do with the TransferService
@@ -377,6 +388,8 @@ class TransferServiceTest extends TestCase
     #[Depends('it_can_initiate_bulk_transfer')]
     public function it_can_navigate_between_pages_using_utility_methods(InitiateBulkTransferResponse $bulkTransferResponse)
     {
+        sleep(2); // wait for monnify to process the transaction.
+
         $batchReference = $bulkTransferResponse->responseBody->batchReference;
         $result = $this->transferService->getBulkTransferTransactions($batchReference, ['pageSize' => 5]);
         $this->assertInstanceOf(PaginatedResponse::class, $result);

@@ -240,4 +240,12 @@ class Config
             'webhook_event_handlers' => $this->webhookEventHandlers,
         ];
     }
+
+    /**
+     * Root directory for this package.
+     */
+    public function getPackageRootDirectory(): string
+    {
+        return realpath(__DIR__ . '/../..');
+    }
 }

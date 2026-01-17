@@ -9,6 +9,8 @@ use PraiseDare\Monnify\Exceptions\MonnifyException;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
+use PraiseDare\Monnify\Contracts\TokenStoreInterface;
+use PraiseDare\Monnify\Providers\TokenStoreProvider;
 
 /**
  * HTTP Client for Monnify API
@@ -19,7 +21,7 @@ class Client
 {
     private Config $config;
     private GuzzleClient $httpClient;
-    private ?string $accessToken = null;
+    private TokenStoreInterface $tokenStore;
 
     const AUTH_ENDPOINT = '/api/v1/auth/login';
 
@@ -31,6 +33,12 @@ class Client
     public function __construct(Config $config)
     {
         $this->config = $config;
+
+        static $tokenStore = TokenStoreProvider::create(
+            $this->getConfig()->getPackageRootDirectory() . '/storage'
+        );
+        $this->tokenStore = $tokenStore;
+
         $this->httpClient = new GuzzleClient([
             'base_uri' => $config->getBaseUrl(),
             'timeout' => $config->getTimeout(),
@@ -159,11 +167,7 @@ class Client
      */
     private function getAccessToken(): string
     {
-        if ($this->accessToken === null) {
-            $this->authenticate();
-        }
-
-        return $this->accessToken;
+        return $this->tokenStore->getToken($this->authenticate(...));
     }
 
     /**
@@ -171,7 +175,7 @@ class Client
      *
      * @throws MonnifyException
      */
-    private function authenticate(): void
+    private function authenticate(): array
     {
         $credentials = base64_encode($this->config->getApiKey() . ':' . $this->config->getSecretKey());
 
@@ -187,9 +191,10 @@ class Client
             $data = json_decode($response->getBody()->getContents(), true);
             // Check for access token in response
             if (isset($data['responseBody']['accessToken'])) {
-                $this->accessToken = $data['responseBody']['accessToken'];
-            } elseif (isset($data['accessToken'])) {
-                $this->accessToken = $data['accessToken'];
+                return [
+                    'token' => $data['responseBody']['accessToken'],
+                    'expires_in' => $data['responseBody']['expiresIn'],
+                ];
             } else {
                 // If no access token found, we might need to use Basic Auth for all requests
                 // For now, let's throw an exception
