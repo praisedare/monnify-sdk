@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify\Data\Transfers\Responses;
 
+use PraiseDare\Monnify\Data\MonnifyResponse;
+
 /**
  * Response for initiating a bulk transfer
  */
-class InitiateBulkTransferResponse
+class InitiateBulkTransferResponse extends MonnifyResponse
 {
     public function __construct(
-        public readonly bool $requestSuccessful,
-        public readonly string $responseMessage,
-        public readonly string $responseCode,
-        public readonly InitiateBulkTransferResponseBody $responseBody
+        bool $requestSuccessful,
+        string $responseMessage,
+        string $responseCode,
+        ?InitiateBulkTransferResponseBody $responseBody
     ) {
+        parent::__construct($requestSuccessful, $responseMessage, $responseCode, $responseBody);
     }
 
     /**
@@ -26,7 +29,9 @@ class InitiateBulkTransferResponse
             requestSuccessful: $data['requestSuccessful'],
             responseMessage: $data['responseMessage'],
             responseCode: $data['responseCode'],
-            responseBody: InitiateBulkTransferResponseBody::fromArray($data['responseBody'])
+            responseBody: isset($data['responseBody']) && is_array($data['responseBody'])
+                ? InitiateBulkTransferResponseBody::fromArray($data['responseBody'])
+                : null
         );
     }
 
@@ -39,7 +44,7 @@ class InitiateBulkTransferResponse
             'requestSuccessful' => $this->requestSuccessful,
             'responseMessage' => $this->responseMessage,
             'responseCode' => $this->responseCode,
-            'responseBody' => $this->responseBody->toArray(),
+            'responseBody' => $this->responseBody?->toArray(),
         ];
     }
 }

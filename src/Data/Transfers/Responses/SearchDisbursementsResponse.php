@@ -7,17 +7,20 @@ namespace PraiseDare\Monnify\Data\Transfers\Responses;
 use PraiseDare\Monnify\Data\Common\Pageable;
 use PraiseDare\Monnify\Data\Common\Sort;
 
+use PraiseDare\Monnify\Data\MonnifyResponse;
+
 /**
  * Response for searching disbursements
  */
-class SearchDisbursementsResponse
+class SearchDisbursementsResponse extends MonnifyResponse
 {
     public function __construct(
-        public readonly bool $requestSuccessful,
-        public readonly string $responseMessage,
-        public readonly string $responseCode,
-        public readonly SearchDisbursementsResponseBody $responseBody
+        bool $requestSuccessful,
+        string $responseMessage,
+        string $responseCode,
+        ?SearchDisbursementsResponseBody $responseBody
     ) {
+        parent::__construct($requestSuccessful, $responseMessage, $responseCode, $responseBody);
     }
 
     /**
@@ -29,7 +32,9 @@ class SearchDisbursementsResponse
             requestSuccessful: $data['requestSuccessful'],
             responseMessage: $data['responseMessage'],
             responseCode: $data['responseCode'],
-            responseBody: SearchDisbursementsResponseBody::fromArray($data['responseBody'])
+            responseBody: isset($data['responseBody']) && is_array($data['responseBody'])
+                ? SearchDisbursementsResponseBody::fromArray($data['responseBody'])
+                : null
         );
     }
 
@@ -42,7 +47,7 @@ class SearchDisbursementsResponse
             'requestSuccessful' => $this->requestSuccessful,
             'responseMessage' => $this->responseMessage,
             'responseCode' => $this->responseCode,
-            'responseBody' => $this->responseBody->toArray(),
+            'responseBody' => $this->responseBody?->toArray(),
         ];
     }
 }

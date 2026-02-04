@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace PraiseDare\Monnify\Data\Transfers\Responses;
 
 use PraiseDare\Monnify\Data\Transfers\BulkTransferSummary;
+use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for getting bulk transfer status
  */
-class GetBulkTransferStatusResponse
+class GetBulkTransferStatusResponse extends MonnifyResponse
 {
     public function __construct(
-        public readonly bool $requestSuccessful,
-        public readonly string $responseMessage,
-        public readonly string $responseCode,
-        public readonly BulkTransferSummary $responseBody
+        bool $requestSuccessful,
+        string $responseMessage,
+        string $responseCode,
+        ?BulkTransferSummary $responseBody
     ) {
+        parent::__construct($requestSuccessful, $responseMessage, $responseCode, $responseBody);
     }
 
     /**
@@ -28,7 +30,9 @@ class GetBulkTransferStatusResponse
             requestSuccessful: $data['requestSuccessful'],
             responseMessage: $data['responseMessage'],
             responseCode: $data['responseCode'],
-            responseBody: BulkTransferSummary::fromArray($data['responseBody'])
+            responseBody: isset($data['responseBody']) && is_array($data['responseBody'])
+                ? BulkTransferSummary::fromArray($data['responseBody'])
+                : null
         );
     }
 
@@ -41,7 +45,7 @@ class GetBulkTransferStatusResponse
             'requestSuccessful' => $this->requestSuccessful,
             'responseMessage' => $this->responseMessage,
             'responseCode' => $this->responseCode,
-            'responseBody' => $this->responseBody->toArray(),
+            'responseBody' => $this->responseBody?->toArray(),
         ];
     }
 }

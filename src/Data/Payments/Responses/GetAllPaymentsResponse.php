@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace PraiseDare\Monnify\Data\Payments\Responses;
 
+use PraiseDare\Monnify\Data\MonnifyResponse;
+
 /**
  * Response DTO for getting all payments
  */
-class GetAllPaymentsResponse
+class GetAllPaymentsResponse extends MonnifyResponse
 {
     public function __construct(
-        public readonly bool $requestSuccessful,
-        public readonly string $responseMessage,
-        public readonly string $responseCode,
-        public readonly GetAllPaymentsResponseBody $responseBody,
+        bool $requestSuccessful,
+        string $responseMessage,
+        string $responseCode,
+        ?GetAllPaymentsResponseBody $responseBody,
     ) {
+        parent::__construct($requestSuccessful, $responseMessage, $responseCode, $responseBody);
     }
 
     /**
@@ -26,7 +29,9 @@ class GetAllPaymentsResponse
             requestSuccessful: $data['requestSuccessful'],
             responseMessage: $data['responseMessage'],
             responseCode: $data['responseCode'],
-            responseBody: GetAllPaymentsResponseBody::fromArray($data['responseBody']),
+            responseBody: isset($data['responseBody']) && is_array($data['responseBody'])
+                ? GetAllPaymentsResponseBody::fromArray($data['responseBody'])
+                : null,
         );
     }
 
@@ -39,7 +44,7 @@ class GetAllPaymentsResponse
             'requestSuccessful' => $this->requestSuccessful,
             'responseMessage' => $this->responseMessage,
             'responseCode' => $this->responseCode,
-            'responseBody' => $this->responseBody->toArray(),
+            'responseBody' => $this->responseBody?->toArray(),
         ];
     }
 

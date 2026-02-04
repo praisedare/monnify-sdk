@@ -13,7 +13,7 @@ use Exception;
  */
 class MonnifyException extends Exception
 {
-    private ?string $errorCode;
+    public ?string $errorCode;
 
     /**
      * Constructor

@@ -10,6 +10,7 @@ use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use PraiseDare\Monnify\Contracts\TokenStoreInterface;
+use PraiseDare\Monnify\Exceptions\ProtocolException;
 use PraiseDare\Monnify\Providers\TokenStoreProvider;
 
 /**
@@ -47,6 +48,7 @@ class Client
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ],
+            'http_errors' => false,
         ]);
     }
 
@@ -137,13 +139,17 @@ class Client
 
         try {
             $response = $this->httpClient->request($method, $endpoint, $options);
+            $statusCode = $response->getStatusCode();
             $responseData = json_decode($response->getBody()->getContents(), true);
 
-            return $this->handleResponse($responseData);
+            return $this->handleResponse($responseData, $statusCode);
         } catch (RequestException $e) {
             throw $this->handleRequestException($e);
+        } catch (MonnifyException $m) {
+            throw $m;
         } catch (\Exception $e) {
-            throw new MonnifyException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+            // dump($e);
+            throw new MonnifyException($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -206,18 +212,43 @@ class Client
     }
 
     /**
-     * Handle API response
+     * Handle API response.
      *
-     * @param array $responseData Response data
+     * Throws exceptions in cases where the response is deemed a "failure" which the application
+     * should not see, e.g. authentication error, validation error, e.t.c. Other "failure" cases
+     * such as a 404 will be allowed to pass through so that the consuming code can react
+     * appropriately.
+     *
+     * @param array{requestSuccessful: bool, responseCode: string, responseMessage: string}|array{error: string, error_description: string} $responseData Response data
      * @return array Processed response
      * @throws MonnifyException
      */
-    private function handleResponse(array $responseData): array
+    private function handleResponse(array $responseData, int $statusCode): array
     {
-        if (isset($responseData['requestSuccessful']) && !$responseData['requestSuccessful']) {
-            $message = $responseData['responseMessage'] ?? 'API request failed';
-            $code = $responseData['responseCode'] ?? 'UNKNOWN_ERROR';
-            throw new MonnifyException($message, 0, null, $code);
+
+        // 1. Check for required structure
+        // NOTE: Route-level 404s will not have this structure and cause a protocol error.
+        // A resource-level 404 will have this structure and be handled in the next step.
+        if (!isset($responseData['requestSuccessful'])
+            || !array_key_exists('responseMessage', $responseData)
+            || !array_key_exists('responseCode', $responseData)
+        ) {
+            throw new ProtocolException(
+                'Unexpected Response Structure: ' . json_encode($responseData),
+                $statusCode
+            );
+        }
+
+        // 2. Check for specific HTTP error codes that must always throw
+        if (in_array($statusCode, [401, 403, 422]) || $statusCode >= 500) {
+            $message = (isset($responseData['error'])
+                    ? "{$responseData['error']}: {$responseData['error_description']}"
+                    : null)
+                ?? $responseData['responseMessage']
+                ?? 'API request failed'
+                ;
+            $code = $responseData['responseCode'] ?? 'HTTP_' . $statusCode;
+            throw new MonnifyException($message, $statusCode, null, $code);
         }
 
         return $responseData;
@@ -238,10 +269,16 @@ class Client
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
-            $message = $data['responseMessage'] ?? $e->getMessage();
-            $code = $data['responseCode'] ?? 'HTTP_' . $statusCode;
+            if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                return new MonnifyException(
+                    $data['error_description'] ?? $data['responseMessage'] ?? $e->getMessage(),
+                    $statusCode,
+                    $e,
+                    $data['responseCode'] ?? 'HTTP_' . $statusCode
+                );
+            }
 
-            return new MonnifyException($message, $statusCode, $e, $code);
+            return new MonnifyException('HTTP request failed: ' . $e->getMessage(), $statusCode, $e);
         }
 
         return new MonnifyException('Network error: ' . $e->getMessage(), 0, $e);

@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace PraiseDare\Monnify\Data\Transfers\Responses;
 
 use PraiseDare\Monnify\Data\Transfers\TransferDetails;
+use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for getting single transfer status
  */
-class GetSingleTransferStatusResponse
+class GetSingleTransferStatusResponse extends MonnifyResponse
 {
     public function __construct(
-        public readonly bool $requestSuccessful,
-        public readonly string $responseMessage,
-        public readonly string $responseCode,
-        public readonly TransferDetails $responseBody
+        bool $requestSuccessful,
+        string $responseMessage,
+        string $responseCode,
+        ?TransferDetails $responseBody
     ) {
+        parent::__construct($requestSuccessful, $responseMessage, $responseCode, $responseBody);
     }
 
     /**
@@ -28,7 +30,9 @@ class GetSingleTransferStatusResponse
             requestSuccessful: $data['requestSuccessful'],
             responseMessage: $data['responseMessage'],
             responseCode: $data['responseCode'],
-            responseBody: TransferDetails::fromArray($data['responseBody'])
+            responseBody: isset($data['responseBody']) && is_array($data['responseBody'])
+                ? TransferDetails::fromArray($data['responseBody'])
+                : null
         );
     }
 
@@ -41,7 +45,7 @@ class GetSingleTransferStatusResponse
             'requestSuccessful' => $this->requestSuccessful,
             'responseMessage' => $this->responseMessage,
             'responseCode' => $this->responseCode,
-            'responseBody' => $this->responseBody->toArray(),
+            'responseBody' => $this->responseBody?->toArray(),
         ];
     }
 }
