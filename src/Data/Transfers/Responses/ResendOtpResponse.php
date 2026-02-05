@@ -8,6 +8,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for resending OTP
+ * @property ?ResendOtpResponseBody $responseBody
  */
 class ResendOtpResponse extends MonnifyResponse
 {

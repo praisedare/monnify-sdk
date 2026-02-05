@@ -8,6 +8,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for getting wallet balance
+ * @property ?GetWalletBalanceResponseBody $responseBody
  */
 class GetWalletBalanceResponse extends MonnifyResponse
 {

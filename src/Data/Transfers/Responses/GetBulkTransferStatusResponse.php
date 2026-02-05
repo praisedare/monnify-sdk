@@ -9,6 +9,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for getting bulk transfer status
+ * @property ?BulkTransferSummary $responseBody
  */
 class GetBulkTransferStatusResponse extends MonnifyResponse
 {

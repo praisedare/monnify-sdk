@@ -8,6 +8,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for authorizing a bulk transfer
+ * @property ?AuthorizeBulkTransferResponseBody $responseBody
  */
 class AuthorizeBulkTransferResponse extends MonnifyResponse
 {

@@ -8,6 +8,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response DTO for getting all payments
+ * @property ?GetAllPaymentsResponseBody $responseBody
  */
 class GetAllPaymentsResponse extends MonnifyResponse
 {

@@ -11,6 +11,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response DTO for payment verification
+ * @property ?VerifyPaymentResponseBody $responseBody
  */
 class VerifyPaymentResponse extends MonnifyResponse
 {

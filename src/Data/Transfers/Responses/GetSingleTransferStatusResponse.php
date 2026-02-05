@@ -9,6 +9,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for getting single transfer status
+ * @property ?TransferDetails $responseBody
  */
 class GetSingleTransferStatusResponse extends MonnifyResponse
 {

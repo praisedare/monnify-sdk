@@ -8,6 +8,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for authorizing a single transfer
+ * @property ?AuthorizeSingleTransferResponseBody $responseBody
  */
 class AuthorizeSingleTransferResponse extends MonnifyResponse
 {

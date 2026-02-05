@@ -11,6 +11,7 @@ use PraiseDare\Monnify\Data\MonnifyResponse;
 
 /**
  * Response for searching disbursements
+ * @property ?SearchDisbursementsResponseBody $responseBody
  */
 class SearchDisbursementsResponse extends MonnifyResponse
 {
