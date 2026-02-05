@@ -25,6 +25,7 @@ class Client
     private TokenStoreInterface $tokenStore;
 
     const AUTH_ENDPOINT = '/api/v1/auth/login';
+    const FALLTHROUGH_STATUS_CODES = [404];
 
     /**
      * Constructor
@@ -240,7 +241,7 @@ class Client
         }
 
         // 2. Check for specific HTTP error codes that must always throw
-        if (in_array($statusCode, [401, 403, 422]) || $statusCode >= 500) {
+        if ($statusCode >= 400 && !in_array($statusCode, self::FALLTHROUGH_STATUS_CODES)) {
             $message = (isset($responseData['error'])
                     ? "{$responseData['error']}: {$responseData['error_description']}"
                     : null)
