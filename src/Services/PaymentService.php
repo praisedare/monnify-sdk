@@ -58,7 +58,7 @@ class PaymentService
     /**
      * Verify a payment transaction
      *
-     * @param string $transactionReference Transaction reference
+     * @param string $transactionReference Monnify-generated transaction reference
      * @return VerifyPaymentResponse Response data
      * @throws MonnifyException
      */
@@ -78,7 +78,7 @@ class PaymentService
     /**
      * Get transaction status
      *
-     * @param string $transactionReference The Monnify transaction reference
+     * @param string $transactionReference The Monnify-generated transaction reference
      * @return VerifyPaymentResponse Response data
      * @throws MonnifyException
      */
@@ -90,13 +90,38 @@ class PaymentService
     /**
      * Get transaction details
      *
-     * @param string $transactionReference Transaction reference
+     * @param string $transactionReference The Monnify-generated transaction reference
      * @return VerifyPaymentResponse Response data
      * @throws MonnifyException
      */
     public function getDetails(string $transactionReference): VerifyPaymentResponse
     {
         return $this->verify($transactionReference);
+    }
+
+    /**
+     * Gets the status of a payment by querying with the user-supplied reference.
+     * @param string $paymentReference The client-generated payment reference.
+     * @throws MonnifyException
+     */
+    public function verifyByPaymentReference(string $paymentReference): VerifyPaymentResponse
+    {
+        if (empty($paymentReference)) {
+            throw new MonnifyException('Transaction reference is required', 400, null, 'VALIDATION_ERROR');
+        }
+
+        $paymentReference = urlencode($paymentReference);
+        $params = http_build_query(compact('paymentReference'));
+        $response = $this->client->get("/api/v2/merchant/transactions/query?{$params}");
+
+        return VerifyPaymentResponse::fromArray($response);
+    }
+    /**
+     * Alias for `verifyByPaymentReference`.
+     */
+    public function verifyByClientReference(string $paymentReference): VerifyPaymentResponse
+    {
+        return $this->verifyByPaymentReference($paymentReference);
     }
 
     /**

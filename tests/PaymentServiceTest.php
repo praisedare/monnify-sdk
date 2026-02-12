@@ -30,16 +30,6 @@ class PaymentServiceTest extends TestCase
         $this->paymentService = $this->monnify->payment();
     }
 
-    public static function tearDownAfterClass(): void
-    {
-        // Clean up any test data if needed
-        // Note: Monnify doesn't typically allow deletion of transactions
-        // but we can log the created payment references for manual cleanup
-        if (!empty(self::$createdPayments)) {
-            self::$logger->info("Created test payments (for manual verification/cleanup):\n", ['payments' => self::$createdPayments]);
-        }
-    }
-
     #[Test]
     public function it_can_initialize_payment_with_valid_data(): void
     {
@@ -216,6 +206,52 @@ class PaymentServiceTest extends TestCase
         $this->assertIsBool($response->isExpired());
     }
 
+
+    #[Test]
+    public function it_can_verify_payment_using_client_reference(): void
+    {
+        // First create a payment to verify
+        $uniqueRef = 'PAY_VERIFY_' . time() . '_' . rand(1000, 9999);
+
+        $paymentData = new PaymentData(
+            amount: 750.00,
+            customerName: 'Verify Test User',
+            customerEmail: 'verify@example.com',
+            paymentReference: $uniqueRef,
+            redirectUrl: 'https://example.com/callback',
+            paymentDescription: 'Payment for verification test'
+        );
+
+        $initResponse = $this->paymentService->initialize($paymentData);
+        $transactionReference = $initResponse->getTransactionReference();
+
+        // Store for cleanup
+        self::$createdPayments[] = $p = [
+            'paymentReference' => $initResponse->getPaymentReference(),
+            'transactionReference' => $transactionReference
+        ];
+        $this->logger->debug('payment refs', $p);
+
+        // In sandbox environment, transactions might not be immediately available
+        // So we'll test with a slight delay and handle potential 404s gracefully
+        sleep(2); // Wait 2 seconds for transaction to be indexed
+
+        $response = $this->paymentService->verifyByClientReference($initResponse->getPaymentReference());
+
+        // dump($initResponse->getPaymentUrl());
+        $this->assertTrue($response->requestSuccessful);
+        $this->assertEquals($transactionReference, $response->getTransactionReference());
+        $this->assertEquals($uniqueRef, $response->getPaymentReference());
+        $this->assertIsFloat($response->getAmountPaid());
+        $this->assertIsFloat($response->getTotalPayable());
+        $this->assertIsString($response->getPaymentStatus());
+
+        // Test status helper methods
+        $this->assertIsBool($response->isSuccessful());
+        $this->assertIsBool($response->isPending());
+        $this->assertIsBool($response->isFailed());
+        $this->assertIsBool($response->isExpired());
+    }
 
 
     #[Test]
