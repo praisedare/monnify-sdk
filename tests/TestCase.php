@@ -34,6 +34,11 @@ class TestCase extends BaseTest
             'environment' => $creds['environment'],
             'wallet_account_number' => $creds['wallet_account_number'],
         ]);
+
+        if ($creds['environment'] !== 'sandbox') {
+            throw new \Exception('Do not use your live credentials for testing.');
+        }
     }
 
 }
+
